@@ -184,7 +184,7 @@ class HoverTranslator {
   private findTranslation(
     text: string
   ): { translation: string; matchedKey: string } | null {
-    const normalizedText = text.toLowerCase().trim();
+    const normalizedText = text.toLowerCase().trim().replace(/\s+/g, " ");
 
     const findInObject = (
       obj: ContentTranslationData,
@@ -196,7 +196,7 @@ class HoverTranslator {
       } | null = null;
 
       for (const [key, value] of Object.entries(obj)) {
-        const normalizedKey = key.toLowerCase().trim();
+        const normalizedKey = key.toLowerCase().trim().replace(/\s+/g, " ");
 
         // Correspondance exacte (priorité)
         if (normalizedKey === searchText) {
