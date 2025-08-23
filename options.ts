@@ -624,22 +624,30 @@ class OptionsManager {
 
   private initTranslationForm(): void {
     try {
-      const TranslationFormClass = (window as unknown as Record<string, unknown>)["TranslationForm"];
+      const TranslationFormClass = (
+        window as unknown as Record<string, unknown>
+      )["TranslationForm"];
       if (typeof TranslationFormClass === "function") {
-        this.translationForm = new (TranslationFormClass as new (containerId: string, callbacks: unknown) => unknown)("translationFormContainer", {
-          onAdd: (key: string, value: string) => {
+        this.translationForm = new (TranslationFormClass as new (
+          containerId: string,
+          callbacks: unknown
+        ) => unknown)("translationFormContainer", {
+          onAdd: (key: string, value: string): void => {
             this.handleTranslationAdd(key, value);
           },
-          onSuccess: (message: string) => {
+          onSuccess: (message: string): void => {
             this.showSnackbar(message, "success");
           },
-          onError: (message: string) => {
+          onError: (message: string): void => {
             this.showSnackbar(message, "error");
-          }
+          },
         });
       }
     } catch (error) {
-      console.error("Erreur lors de l'initialisation du formulaire de traduction:", error);
+      console.error(
+        "Erreur lors de l'initialisation du formulaire de traduction:",
+        error
+      );
     }
   }
 

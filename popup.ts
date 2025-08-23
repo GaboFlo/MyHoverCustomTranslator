@@ -186,7 +186,7 @@ class PopupManager {
   private openOptions(): void {
     try {
       // Méthode 1 : API Chrome standard
-      if (chrome && chrome.runtime && chrome.runtime.openOptionsPage) {
+      if (chrome?.runtime?.openOptionsPage) {
         chrome.runtime.openOptionsPage();
       } else {
         // Méthode 2 : Fallback avec getURL
@@ -337,10 +337,10 @@ class PopupManager {
           containerId: string,
           callbacks: unknown
         ) => unknown)("translationFormContainer", {
-          onSuccess: (message: string) => {
+          onSuccess: (message: string): void => {
             this.showNotification(message);
           },
-          onError: (message: string) => {
+          onError: (message: string): void => {
             this.showNotification(message);
           },
         });
