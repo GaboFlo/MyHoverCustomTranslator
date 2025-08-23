@@ -22,7 +22,7 @@ Extension de navigateur moderne pour la traduction au survol avec dictionnaire p
 
 ```bash
 # Cloner le repository
-git clone https://github.com/[USERNAME]/MyHoverCustomTranslator.git
+git clone https://github.com/gaboflo/MyHoverCustomTranslator.git
 cd MyHoverCustomTranslator
 
 # Installer les dépendances
@@ -120,8 +120,8 @@ MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ## 📞 Support
 
-- 🐛 **Bugs** : [Issues GitHub](https://github.com/[USERNAME]/MyHoverCustomTranslator/issues)
-- 💡 **Suggestions** : [Discussions GitHub](https://github.com/[USERNAME]/MyHoverCustomTranslator/discussions)
+- 🐛 **Bugs** : [Issues GitHub](https://github.com/gaboflo/MyHoverCustomTranslator/issues)
+- 💡 **Suggestions** : [Discussions GitHub](https://github.com/gaboflo/MyHoverCustomTranslator/discussions)
 - 📧 **Contact** : [Votre email]
 
 ---

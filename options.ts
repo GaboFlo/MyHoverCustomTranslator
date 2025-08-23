@@ -543,7 +543,7 @@ class OptionsManager {
       }
 
       const exportData: ExportData = {
-        version: "1.0.0",
+        version: chrome.runtime.getManifest().version,
         exportDate: new Date().toISOString(),
         translations: completeTranslations,
         targetUrls: result.targetUrls || [],

@@ -20,7 +20,7 @@
     "firefox",
     "typescript"
   ],
-  "author": "MyHover Custom Translator",
+  "author": "GaboFlo",
   "license": "MIT",
   "devDependencies": {
     "@types/chrome": "^0.0.254",

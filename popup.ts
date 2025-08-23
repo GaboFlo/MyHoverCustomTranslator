@@ -31,6 +31,7 @@ class PopupManager {
     this.cacheElements();
     this.bindEvents();
     this.loadStatus();
+    this.updateVersion();
   }
 
   private cacheElements(): void {
@@ -292,6 +293,17 @@ class PopupManager {
         }
       }, 300);
     }, 2000);
+  }
+
+  private updateVersion(): void {
+    try {
+      const versionElement = document.getElementById("version");
+      if (versionElement) {
+        versionElement.textContent = chrome.runtime.getManifest().version;
+      }
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour de la version:", error);
+    }
   }
 }
 
