@@ -51,18 +51,16 @@ jobs:
       - name: Build extension
         run: npm run build
 
-      - name: Create Chrome Store ZIP
-        run: |
-          # Créer le ZIP pour Chrome Store
-          cd dist
-          zip -r "../myhover-translator-${{ steps.version.outputs.version }}.zip" . -x "*.DS_Store" "*/.*"
-          cd ..
-
-          echo "✅ ZIP créé: myhover-translator-${{ steps.version.outputs.version }}.zip"
-
-      - name: Upload Chrome Store ZIP
+      - name: Upload Extension Files
         uses: actions/upload-artifact@v4
         with:
-          name: chrome-store-zip-${{ steps.version.outputs.version }}
-          path: myhover-translator-${{ steps.version.outputs.version }}.zip
-          retention-days: 10
+          name: extension-files-${{ steps.version.outputs.version }}
+          path: dist/**/*
+          retention-days: 30
+
+      - name: Show Release Info
+        run: |
+          echo "🎉 Release préparée pour la version ${{ steps.version.outputs.version }}"
+          echo "📁 Fichiers d'extension disponibles dans les artifacts"
+          echo "📝 Téléchargez l'artifact 'extension-files-${{ steps.version.outputs.version }}' pour obtenir le ZIP"
+          echo "📦 Le ZIP contiendra tous les fichiers de l'extension prêts pour Chrome Store"
