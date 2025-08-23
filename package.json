@@ -1,6 +1,7 @@
 {
   "name": "myhover-custom-translator",
   "version": "1.0.0",
+  "type": "module",
   "description": "Extension de navigateur pour la traduction au survol avec dictionnaire personnalisable",
   "main": "dist/content.js",
   "scripts": {

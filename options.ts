@@ -224,7 +224,7 @@ class OptionsManager {
 
       // Vérifier les changements et mettre à jour l'état des boutons
       this.checkForChanges();
-    } catch (error) {
+    } catch {
       this.showSnackbar("Erreur lors du chargement des paramètres", "error");
     }
   }
@@ -346,7 +346,7 @@ class OptionsManager {
 
       // Mettre à jour le textarea avec le JSON formaté
       this.elements.translationsJson.value = formatted;
-    } catch (error) {
+    } catch {
       // En cas d'erreur de parsing, on ne fait rien (le JSON n'est pas valide)
     }
   }
@@ -502,7 +502,7 @@ class OptionsManager {
         this.hasChanges = false;
         this.updateButtonsState();
         this.showSnackbar("Paramètres réinitialisés", "info");
-      } catch (error) {
+      } catch {
         this.showSnackbar("Erreur lors de la réinitialisation", "error");
       }
     }
@@ -567,7 +567,7 @@ class OptionsManager {
       URL.revokeObjectURL(url);
 
       this.showSnackbar("Paramètres exportés avec succès", "success");
-    } catch (error) {
+    } catch {
       this.showSnackbar("Erreur lors de l'export", "error");
     }
   }
@@ -668,7 +668,7 @@ class OptionsManager {
       this.checkForChanges();
 
       this.showSnackbar(`Traduction "${key}" ajoutée avec succès`, "success");
-    } catch (error) {
+    } catch {
       this.showSnackbar("Erreur lors de l'ajout de la traduction", "error");
     }
   }
