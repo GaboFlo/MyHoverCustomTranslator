@@ -23,7 +23,7 @@
   "author": "GaboFlo",
   "license": "MIT",
   "devDependencies": {
-    "@types/chrome": "^0.0.254",
+    "@types/chrome": "^0.1.4",
     "@types/node": "^20.10.0",
     "@typescript-eslint/eslint-plugin": "^6.13.0",
     "@typescript-eslint/parser": "^6.13.0",
