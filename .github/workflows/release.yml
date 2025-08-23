@@ -60,18 +60,6 @@ jobs:
 
           echo "✅ ZIP créé: myhover-translator-${{ steps.version.outputs.version }}.zip"
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            dist/**/*
-            myhover-translator-${{ steps.version.outputs.version }}.zip
-          generate_release_notes: true
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Upload Chrome Store ZIP
         uses: actions/upload-artifact@v4
         with:
