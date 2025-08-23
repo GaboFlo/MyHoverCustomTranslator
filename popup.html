@@ -4,38 +4,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MyHover Custom Translator</title>
+    <title>Traducteur personnalisé au survol</title>
     <link rel="stylesheet" href="popup.css">
 </head>
 
 <body>
     <div class="popup-container">
         <header class="popup-header">
-            <h1>🔤 MyHover</h1>
-            <p>Traducteur personnalisé</p>
+            <h1>🔤 Traducteur personnalisé au survol</h1>
+            <p>Traducteur personnalisé selon votre dictionnaire</p>
         </header>
 
         <main class="popup-content">
             <div class="status-section">
                 <div class="status-item">
-                    <span class="status-label">État:</span>
-                    <span id="statusIndicator" class="status-indicator">Actif</span>
+                    <span class="status-label">Site actuel</span>
+                    <span id="siteStatusIndicator" class="status-indicator">Actif</span>
+                    <button id="addCurrentSite" class="btn btn-secondary">
+                        ➕ Ajouter ce site
+                    </button>
+                    <button id="removeCurrentSite" class="btn btn-danger">
+                        🗑️ Retirer ce site
+                    </button>
                 </div>
-                <div class="status-item">
-                    <span class="status-label">Traductions:</span>
-                    <span id="translationCount" class="status-value">0</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">URLs ciblées:</span>
-                    <span id="urlCount" class="status-value">Toutes</span>
+                <div class="url-input-section">
+                    <input type="text" id="currentSiteUrl" class="url-input" placeholder="Domaine">
                 </div>
             </div>
 
             <div class="actions-section">
-                <button id="toggleExtension" class="btn btn-primary">
-                    <span id="toggleText">Désactiver</span>
-                </button>
-                <button id="openOptions" class="btn btn-secondary" onclick="window.open('options.html', '_blank')">
+                <button id="openOptions" class="btn btn-secondary">
                     ⚙️ Options
                 </button>
             </div>
@@ -48,7 +46,7 @@
         </main>
 
         <footer class="popup-footer">
-            <small>Version 1.0.0</small>
+            <small>Version <span id="version">1.0.0</span></small>
         </footer>
     </div>
 

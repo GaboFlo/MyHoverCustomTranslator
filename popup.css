@@ -52,10 +52,45 @@ body {
   align-items: center;
   padding: 8px 0;
   border-bottom: 1px solid #f0f0f0;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.url-input-section {
+  padding: 8px 0;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.url-input {
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 12px;
+  background-color: #f9f9f9;
+  color: #666;
+}
+
+.url-input:focus {
+  outline: none;
+  border-color: #007bff;
+  background-color: white;
 }
 
 .status-item:last-child {
   border-bottom: none;
+}
+
+.status-item .btn {
+  flex-shrink: 0;
+  min-width: auto;
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  display: none;
+}
+
+.status-item .btn.visible {
+  display: inline-block;
 }
 
 .status-label {
@@ -78,6 +113,36 @@ body {
   font-weight: 600;
   color: #495057;
   font-size: 0.9rem;
+}
+
+.site-status {
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.site-status.active {
+  background: #d4edda;
+  border: 1px solid #c3e6cb;
+}
+
+.site-status.inactive {
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+}
+
+.site-status-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.site-status.active .site-status-text {
+  color: #155724;
+}
+
+.site-status.inactive .site-status-text {
+  color: #721c24;
 }
 
 .actions-section {
@@ -121,12 +186,12 @@ body {
 }
 
 .btn-secondary {
-  background: #6c757d;
+  background: #007bff;
   color: white;
 }
 
 .btn-secondary:hover {
-  background: #5a6268;
+  background: #0056b3;
 }
 
 .btn-danger {

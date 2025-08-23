@@ -396,6 +396,72 @@ textarea:focus {
   background: rgba(255, 255, 255, 0.1);
 }
 
+/* Styles pour les sous-sections */
+.subsection-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #495057;
+  margin: 25px 0 15px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.subsection-title:first-child {
+  margin-top: 0;
+}
+
+/* Styles pour le formulaire d'ajout de traduction */
+.translation-add-form {
+  margin-bottom: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.form-group {
+  flex: 1;
+  min-width: 200px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #333;
+  font-size: 14px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid #e9ecef;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+  background: white;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.form-group:last-child {
+  flex: 0 0 auto;
+  min-width: auto;
+}
+
+.form-group:last-child .btn {
+  height: 45px;
+  padding: 12px 20px;
+  white-space: nowrap;
+}
+
 @media (max-width: 768px) {
   .container {
     padding: 10px;
@@ -433,6 +499,23 @@ textarea:focus {
     flex-direction: column;
     gap: 10px;
     align-items: flex-start;
+  }
+
+  .form-row {
+    flex-direction: column;
+    gap: 15px;
+  }
+
+  .form-group {
+    min-width: auto;
+  }
+
+  .form-group:last-child {
+    align-self: stretch;
+  }
+
+  .form-group:last-child .btn {
+    width: 100%;
   }
 
   /* Snackbars responsives */

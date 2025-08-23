@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
-    "name": "MyHover Custom Translator",
-    "version": "1.0.0",
+    "name": "Traducteur personnalisé au survol",
+    "version": "0.0.1",
     "description": "Extension de traduction au survol avec dictionnaire personnalisable",
     "permissions": [
         "storage",
@@ -32,6 +32,6 @@
     },
     "action": {
         "default_popup": "popup.html",
-        "default_title": "MyHover Custom Translator"
+        "default_title": "Traducteur personnalisé au survol"
     }
 }
