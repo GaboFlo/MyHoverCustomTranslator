@@ -24,7 +24,12 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        run: echo "version=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        run: |
+          # Extraire la version du tag (ex: v1.2.3 -> 1.2.3)
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION=${VERSION#v}
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "✅ Version extraite du tag: $VERSION"
 
       - name: Update manifest version
         run: |
@@ -33,13 +38,7 @@ jobs:
           VERSION=${VERSION#v}
 
           # Mettre à jour le manifest.json
-          if [[ "$OSTYPE" == "msys" || "$OSTYPE" == "win32" ]]; then
-            # Windows
-            powershell -Command "(Get-Content manifest.json) -replace '\"version\": \"[^\"]*\"', '\"version\": \"$VERSION\"' | Set-Content manifest.json"
-          else
-            # Linux/macOS
-            sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" manifest.json
-          fi
+          sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" manifest.json
 
           echo "✅ Version mise à jour dans manifest.json: $VERSION"
 
@@ -73,11 +72,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Upload extension package
+      - name: Upload Chrome Store ZIP
         uses: actions/upload-artifact@v4
         with:
-          name: extension-release-${{ github.ref_name }}
-          path: |
-            dist/
-            myhover-translator-${{ steps.version.outputs.version }}.zip
-          retention-days: 30
+          name: chrome-store-zip-${{ steps.version.outputs.version }}
+          path: myhover-translator-${{ steps.version.outputs.version }}.zip
+          retention-days: 90

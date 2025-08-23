@@ -71,13 +71,32 @@ Ce projet utilise GitHub Actions pour automatiser les tests, la compilation et l
 
 ### Pour les releases
 
-1. **Créez un tag** :
-   ```bash
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-2. Le workflow **Release** se déclenchera automatiquement
-3. Une **release GitHub** sera créée avec les fichiers de l'extension
+#### Méthode automatique (recommandée)
+
+```bash
+# Linux/macOS
+npm run release 1.2.3
+
+# Windows
+npm run release:win 1.2.3
+```
+
+#### Méthode manuelle
+
+```bash
+# 1. Mettre à jour la version dans manifest.json
+# 2. Créer un tag
+git tag v1.2.3
+git push origin v1.2.3
+```
+
+Le workflow **Release** va automatiquement :
+
+- ✅ Mettre à jour la version dans le manifest selon le tag
+- ✅ Compiler l'extension
+- ✅ Créer un fichier ZIP pour Chrome Store
+- ✅ Créer une release GitHub avec le ZIP
+- ✅ Uploader tous les artefacts
 
 ## Scripts locaux
 

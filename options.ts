@@ -31,28 +31,28 @@ interface OptionsElements {
   exportOptionsSettings: HTMLButtonElement;
   importOptionsSettings: HTMLButtonElement;
   importFile: HTMLInputElement;
+  newTranslationKey: HTMLInputElement;
+  newTranslationValue: HTMLInputElement;
+  addTranslation: HTMLButtonElement;
 }
 
 class OptionsManager {
   private elements: OptionsElements;
+  private originalSettings: OptionsSettings = {};
+  private hasChanges = false;
 
   constructor() {
-    console.log("🔧 OptionsManager: Initialisation...");
     this.elements = {} as OptionsElements;
     this.init();
   }
 
   private init(): void {
-    console.log("🔧 OptionsManager: Début init()");
     this.cacheElements();
     this.bindEvents();
     this.loadOptionsSettings();
-    console.log("🔧 OptionsManager: Fin init()");
   }
 
   private cacheElements(): void {
-    console.log("🔧 OptionsManager: Cache des éléments...");
-
     const translationsJson = document.getElementById(
       "translationsJson"
     ) as HTMLTextAreaElement;
@@ -79,20 +79,15 @@ class OptionsManager {
     const importFile = document.getElementById(
       "importFile"
     ) as HTMLInputElement;
-
-    // Vérification des éléments
-    console.log("🔧 Éléments trouvés:", {
-      translationsJson: !!translationsJson,
-      urlList: !!urlList,
-      isEnabled: !!isEnabled,
-      delayInput: !!delayInput,
-      formatAndValidateJson: !!formatAndValidateJson,
-      saveOptionsSettings: !!saveOptionsSettings,
-      resetOptionsSettings: !!resetOptionsSettings,
-      exportOptionsSettings: !!exportOptionsSettings,
-      importOptionsSettings: !!importOptionsSettings,
-      importFile: !!importFile,
-    });
+    const newTranslationKey = document.getElementById(
+      "newTranslationKey"
+    ) as HTMLInputElement;
+    const newTranslationValue = document.getElementById(
+      "newTranslationValue"
+    ) as HTMLInputElement;
+    const addTranslation = document.getElementById(
+      "addTranslation"
+    ) as HTMLButtonElement;
 
     this.elements = {
       translationsJson,
@@ -105,55 +100,68 @@ class OptionsManager {
       exportOptionsSettings,
       importOptionsSettings,
       importFile,
+      newTranslationKey,
+      newTranslationValue,
+      addTranslation,
     };
   }
 
   private bindEvents(): void {
-    console.log("🔧 OptionsManager: Liaison des événements...");
-
     try {
       this.elements.formatAndValidateJson.addEventListener("click", () => {
-        console.log("🔧 Clic sur formatAndValidateJson");
         this.formatAndValidateJson();
       });
 
       this.elements.saveOptionsSettings.addEventListener("click", () => {
-        console.log("🔧 Clic sur saveOptionsSettings");
         this.saveOptionsSettings();
       });
 
       this.elements.resetOptionsSettings.addEventListener("click", () => {
-        console.log("🔧 Clic sur resetOptionsSettings");
         this.resetOptionsSettings();
       });
 
       this.elements.exportOptionsSettings.addEventListener("click", () => {
-        console.log("🔧 Clic sur exportOptionsSettings");
         this.exportOptionsSettings();
       });
 
       this.elements.importOptionsSettings.addEventListener("click", () => {
-        console.log("🔧 Clic sur importOptionsSettings");
         this.importOptionsSettings();
       });
 
       this.elements.importFile.addEventListener("change", (e: Event) => {
-        console.log("🔧 Changement sur importFile");
         this.handleFileImport(e);
+      });
+
+      this.elements.addTranslation.addEventListener("click", () => {
+        this.addNewTranslation();
+      });
+
+      // Événements de détection des changements
+      this.elements.translationsJson.addEventListener("input", () => {
+        this.checkForChanges();
+      });
+
+      this.elements.isEnabled.addEventListener("change", () => {
+        this.checkForChanges();
+      });
+
+      this.elements.delayInput.addEventListener("input", () => {
+        this.checkForChanges();
       });
 
       this.elements.urlList.addEventListener("click", (e: Event) => {
         const target = e.target as HTMLElement;
         if (target.classList.contains("remove-url")) {
-          console.log("🔧 Clic sur remove-url");
           this.removeUrlField(target);
         } else if (target.classList.contains("add-url")) {
-          console.log("🔧 Clic sur add-url");
-          this.addUrlField();
+          this.addUrlField("", true);
         }
       });
 
-      console.log("🔧 Tous les événements liés avec succès");
+      // Écouter les changements dans les champs URL
+      this.elements.urlList.addEventListener("input", () => {
+        this.checkForChanges();
+      });
     } catch (error) {
       console.error("❌ Erreur lors de la liaison des événements:", error);
     }
@@ -173,10 +181,6 @@ class OptionsManager {
 
       // Vérifier s'il y a des parties de traduction
       if (result.translationPartsCount && result.translationPartsCount > 0) {
-        console.log(
-          `🔧 Chargement de ${result.translationPartsCount} parties de traduction`
-        );
-
         // Charger toutes les parties
         const partKeys = Array.from(
           { length: result.translationPartsCount },
@@ -192,10 +196,6 @@ class OptionsManager {
             translations = { ...translations, ...parts[partKey] };
           }
         }
-
-        console.log(
-          `🔧 ${Object.keys(translations).length} traductions fusionnées`
-        );
       } else {
         translations = result.translations || {};
       }
@@ -212,6 +212,17 @@ class OptionsManager {
 
       this.elements.isEnabled.checked = result.isEnabled !== false;
       this.elements.delayInput.value = (result.delay || 300).toString();
+
+      // Sauvegarder les paramètres originaux pour la comparaison
+      this.originalSettings = {
+        translations,
+        targetUrls,
+        isEnabled: result.isEnabled !== false,
+        delay: result.delay || 300,
+      };
+
+      // Vérifier les changements et mettre à jour l'état des boutons
+      this.checkForChanges();
     } catch (error) {
       this.showSnackbar("Erreur lors du chargement des paramètres", "error");
     }
@@ -221,15 +232,73 @@ class OptionsManager {
     this.elements.urlList.innerHTML = "";
 
     if (urls.length === 0) {
-      this.addUrlField();
+      this.addUrlField("", false);
     } else {
       urls.forEach((url) => {
-        this.addUrlField(url);
+        this.addUrlField(url, false);
       });
     }
   }
 
-  private addUrlField(value: string = ""): void {
+  private checkForChanges(): void {
+    const currentSettings = this.getCurrentSettings();
+    this.hasChanges = this.hasSettingsChanged(currentSettings);
+    this.updateButtonsState();
+  }
+
+  private getCurrentSettings(): OptionsSettings {
+    const urlInputs = this.elements.urlList.querySelectorAll(".url-input");
+    const targetUrls = Array.from(urlInputs)
+      .map((input) => (input as HTMLInputElement).value.trim())
+      .filter((url) => url.length > 0);
+
+    let translations: OptionsTranslationData = {};
+    try {
+      const translationsText = this.elements.translationsJson.value.trim();
+      if (translationsText) {
+        translations = JSON.parse(translationsText);
+      }
+    } catch {
+      // En cas d'erreur de parsing, on considère qu'il y a des changements
+    }
+
+    return {
+      translations,
+      targetUrls,
+      isEnabled: this.elements.isEnabled.checked,
+      delay: parseInt(this.elements.delayInput.value) || 300,
+    };
+  }
+
+  private hasSettingsChanged(currentSettings: OptionsSettings): boolean {
+    // Comparer les traductions
+    const originalTranslations = JSON.stringify(
+      this.originalSettings.translations || {}
+    );
+    const currentTranslations = JSON.stringify(
+      currentSettings.translations || {}
+    );
+    if (originalTranslations !== currentTranslations) return true;
+
+    // Comparer les URLs
+    const originalUrls = JSON.stringify(this.originalSettings.targetUrls || []);
+    const currentUrls = JSON.stringify(currentSettings.targetUrls || []);
+    if (originalUrls !== currentUrls) return true;
+
+    // Comparer les autres paramètres
+    if (this.originalSettings.isEnabled !== currentSettings.isEnabled)
+      return true;
+    if (this.originalSettings.delay !== currentSettings.delay) return true;
+
+    return false;
+  }
+
+  private updateButtonsState(): void {
+    this.elements.saveOptionsSettings.disabled = !this.hasChanges;
+    this.elements.resetOptionsSettings.disabled = !this.hasChanges;
+  }
+
+  private addUrlField(value: string = "", checkChanges: boolean = true): void {
     const urlItem = document.createElement("div");
     urlItem.className = "url-item";
     urlItem.innerHTML = `
@@ -240,12 +309,16 @@ class OptionsManager {
       </div>
     `;
     this.elements.urlList.appendChild(urlItem);
+    if (checkChanges) {
+      this.checkForChanges();
+    }
   }
 
   private removeUrlField(button: HTMLElement): void {
     const urlItem = button.closest(".url-item") as HTMLElement;
     if (this.elements.urlList.children.length > 1) {
       urlItem.remove();
+      this.checkForChanges();
     }
   }
 
@@ -272,11 +345,8 @@ class OptionsManager {
 
       // Mettre à jour le textarea avec le JSON formaté
       this.elements.translationsJson.value = formatted;
-
-      console.log("🔧 JSON formaté automatiquement");
     } catch (error) {
       // En cas d'erreur de parsing, on ne fait rien (le JSON n'est pas valide)
-      console.log("🔧 JSON non valide, formatage ignoré");
     }
   }
 
@@ -299,7 +369,6 @@ class OptionsManager {
         `JSON formaté et validé ! ${keyCount} entrées de traduction trouvées`,
         "success"
       );
-      console.log("🔧 JSON formaté et validé");
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Erreur inconnue";
@@ -325,13 +394,9 @@ class OptionsManager {
       const translationsSize = new Blob([JSON.stringify(translations)]).size;
       const maxSize = 7000; // Limite de sécurité (Chrome limite à 8192 octets)
 
-      console.log(`🔧 Taille du dictionnaire: ${translationsSize} octets`);
-
       let OptionsSettings: OptionsSettings;
 
       if (translationsSize > maxSize) {
-        console.log("🔧 Dictionnaire trop volumineux, division en parties...");
-
         // Diviser le dictionnaire en parties
         const translationParts = this.splitTranslations(translations, maxSize);
 
@@ -355,10 +420,7 @@ class OptionsManager {
           ...savePromises,
         ]);
 
-        this.showSnackbar(
-          `Dictionnaire divisé en ${translationParts.length} parties et sauvegardé !`,
-          "success"
-        );
+        this.showSnackbar(`Sauvegardé avec succès`, "success");
       } else {
         // Nettoyer les anciennes parties si elles existent
         await this.cleanupOldTranslationParts();
@@ -375,6 +437,11 @@ class OptionsManager {
         );
         this.showSnackbar("Paramètres sauvegardés avec succès !", "success");
       }
+
+      // Mettre à jour les paramètres originaux et l'état des boutons
+      this.originalSettings = this.getCurrentSettings();
+      this.hasChanges = false;
+      this.updateButtonsState();
 
       // Formater le JSON dans le textarea pour un affichage propre
       this.formatJsonInTextarea();
@@ -421,9 +488,6 @@ class OptionsManager {
 
   private async cleanupOldTranslationParts(): Promise<void> {
     // Simplification : on ne nettoie pas automatiquement pour éviter les erreurs d'API
-    console.log(
-      "🔧 Nettoyage des anciennes parties désactivé pour éviter les erreurs d'API"
-    );
   }
 
   private async resetOptionsSettings(): Promise<void> {
@@ -433,6 +497,8 @@ class OptionsManager {
       try {
         await chrome.storage.sync.clear();
         this.loadOptionsSettings();
+        this.hasChanges = false;
+        this.updateButtonsState();
         this.showSnackbar("Paramètres réinitialisés", "info");
       } catch (error) {
         this.showSnackbar("Erreur lors de la réinitialisation", "error");
@@ -442,17 +508,45 @@ class OptionsManager {
 
   private async exportOptionsSettings(): Promise<void> {
     try {
+      // Récupérer toutes les données de base
       const result = (await chrome.storage.sync.get([
         "translations",
         "targetUrls",
         "isEnabled",
         "delay",
+        "translationPartsCount",
       ])) as OptionsSettings;
+
+      let completeTranslations = result.translations || {};
+
+      // Si des parties de traduction existent, les fusionner
+      if (result.translationPartsCount && result.translationPartsCount > 0) {
+        const partKeys = Array.from(
+          { length: result.translationPartsCount },
+          (_, i) => `translationPart_${i}`
+        );
+
+        const parts = await chrome.storage.sync.get(partKeys);
+
+        // Fusionner toutes les parties
+        for (let i = 0; i < result.translationPartsCount; i++) {
+          const partKey = `translationPart_${i}`;
+          if (parts[partKey]) {
+            completeTranslations = {
+              ...completeTranslations,
+              ...parts[partKey],
+            };
+          }
+        }
+      }
 
       const exportData: ExportData = {
         version: "1.0.0",
         exportDate: new Date().toISOString(),
-        ...result,
+        translations: completeTranslations,
+        targetUrls: result.targetUrls || [],
+        isEnabled: result.isEnabled !== false,
+        delay: result.delay || 300,
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -512,6 +606,14 @@ class OptionsManager {
 
       this.showSnackbar("Paramètres importés avec succès", "success");
       target.value = "";
+
+      // Sauvegarder automatiquement les paramètres importés
+      await this.saveOptionsSettings();
+
+      // Mettre à jour les paramètres originaux et l'état des boutons après la sauvegarde
+      this.originalSettings = this.getCurrentSettings();
+      this.hasChanges = false;
+      this.updateButtonsState();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : "Erreur inconnue";
@@ -526,6 +628,47 @@ class OptionsManager {
       reader.onerror = (e): void => reject(e);
       reader.readAsText(file);
     });
+  }
+
+  private addNewTranslation(): void {
+    const key = this.elements.newTranslationKey.value.trim();
+    const value = this.elements.newTranslationValue.value.trim();
+
+    if (!key || !value) {
+      this.showSnackbar("Veuillez remplir les deux champs", "warning");
+      return;
+    }
+
+    try {
+      // Récupérer le JSON actuel
+      const currentJson = this.elements.translationsJson.value.trim();
+      let translations: OptionsTranslationData = {};
+
+      if (currentJson) {
+        translations = JSON.parse(currentJson);
+      }
+
+      // Ajouter la nouvelle traduction
+      translations[key] = value;
+
+      // Mettre à jour le textarea avec le nouveau JSON
+      this.elements.translationsJson.value = JSON.stringify(
+        translations,
+        null,
+        2
+      );
+
+      // Vider les champs
+      this.elements.newTranslationKey.value = "";
+      this.elements.newTranslationValue.value = "";
+
+      // Vérifier les changements
+      this.checkForChanges();
+
+      this.showSnackbar(`Traduction "${key}" ajoutée avec succès`, "success");
+    } catch (error) {
+      this.showSnackbar("Erreur lors de l'ajout de la traduction", "error");
+    }
   }
 
   private showSnackbar(
@@ -596,7 +739,6 @@ window.addEventListener("unhandledrejection", (event) => {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  console.log("🔧 DOM chargé - Initialisation OptionsManager");
   try {
     new OptionsManager();
   } catch (error) {

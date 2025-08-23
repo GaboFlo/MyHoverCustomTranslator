@@ -18,24 +18,22 @@
         <main class="popup-content">
             <div class="status-section">
                 <div class="status-item">
-                    <span class="status-label">État:</span>
-                    <span id="statusIndicator" class="status-indicator">Actif</span>
+                    <span class="status-label">Site actuel</span>
+                    <span id="siteStatusIndicator" class="status-indicator">Actif</span>
+                    <button id="addCurrentSite" class="btn btn-secondary">
+                        ➕ Ajouter ce site
+                    </button>
+                    <button id="removeCurrentSite" class="btn btn-danger">
+                        🗑️ Retirer ce site
+                    </button>
                 </div>
-                <div class="status-item">
-                    <span class="status-label">Traductions:</span>
-                    <span id="translationCount" class="status-value">0</span>
-                </div>
-                <div class="status-item">
-                    <span class="status-label">URLs ciblées:</span>
-                    <span id="urlCount" class="status-value">Toutes</span>
+                <div class="url-input-section">
+                    <input type="text" id="currentSiteUrl" class="url-input" placeholder="Domaine">
                 </div>
             </div>
 
             <div class="actions-section">
-                <button id="toggleExtension" class="btn btn-primary">
-                    <span id="toggleText">Désactiver</span>
-                </button>
-                <button id="openOptions" class="btn btn-secondary" onclick="window.open('options.html', '_blank')">
+                <button id="openOptions" class="btn btn-secondary">
                     ⚙️ Options
                 </button>
             </div>

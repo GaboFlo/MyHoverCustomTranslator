@@ -1,6 +1,5 @@
-# 🔤 MyHover Custom Translator
+# 🔤 Traducteur au survol
 
-[![CI](https://github.com/[USERNAME]/MyHoverCustomTranslator/workflows/CI/badge.svg)](https://github.com/[USERNAME]/MyHoverCustomTranslator/actions)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
@@ -58,36 +57,38 @@ npm run watch      # Compilation en temps réel
 npm run lint       # Vérifier le code avec ESLint
 npm run lint:fix   # Corriger automatiquement les erreurs
 npm run clean      # Nettoyer le dossier dist/
+npm run icons      # Générer les icônes PNG
 ```
 
-## 🧪 Tests et CI/CD
+## 🚀 Création de releases
 
-Le projet utilise GitHub Actions pour :
+Pour créer une release, il suffit de créer un tag :
 
-- ✅ **Compilation TypeScript** : Vérification de la compilation
-- ✅ **Linting ESLint** : Contrôle de qualité du code
-- ✅ **Vérification des types** : TypeScript strict mode
-- ✅ **Tests de build** : Validation des fichiers générés
-- ✅ **Releases automatiques** : Création de releases sur tags
+```bash
+# Créer un tag avec la version souhaitée
+git tag v1.2.3
+git push origin v1.2.3
+```
 
-### Workflows
+Le workflow GitHub Actions va automatiquement :
 
-- **CI** : Vérifications sur push/PR
-- **Release** : Création automatique de releases
-- **PR Check** : Commentaires automatiques sur les PR
+- ✅ Extraire la version du tag (v1.2.3 → 1.2.3)
+- ✅ Mettre à jour la version dans manifest.json
+- ✅ Compiler l'extension
+- ✅ Créer un fichier ZIP pour Chrome Store
+- ✅ Créer une release GitHub
+- ✅ Uploader le ZIP comme artefact
 
 ## 📁 Structure du projet
 
 ```
 MyHoverCustomTranslator/
-├── src/
-│   ├── content.ts      # Script de contenu (hover logic)
-│   ├── options.ts      # Page d'options
-│   ├── popup.ts        # Interface popup
-│   └── styles.css      # Styles globaux
+├── content.ts          # Script de contenu (hover logic)
+├── options.ts          # Page d'options
+├── popup.ts            # Interface popup
+├── styles.css          # Styles globaux
 ├── dist/               # Fichiers compilés
 ├── icons/              # Icônes de l'extension
-├── .github/workflows/  # GitHub Actions
 └── package.json        # Configuration NPM
 ```
 

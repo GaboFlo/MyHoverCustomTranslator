@@ -12,7 +12,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [20.x]
 
     steps:
       - name: Checkout code
@@ -79,16 +79,16 @@ jobs:
         run: |
           # Créer un ZIP de test
           cd dist
-          zip -r "../myhover-translator-test-${{ matrix.node-version }}.zip" . -x "*.DS_Store" "*/.*"
+          zip -r "../myhover-translator-test.zip" . -x "*.DS_Store" "*/.*"
           cd ..
-          
-          echo "✅ ZIP de test créé: myhover-translator-test-${{ matrix.node-version }}.zip"
+
+          echo "✅ ZIP de test créé: myhover-translator-test.zip"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: extension-build-${{ matrix.node-version }}
+          name: extension-build
           path: |
             dist/
-            myhover-translator-test-${{ matrix.node-version }}.zip
+            myhover-translator-test.zip
           retention-days: 7

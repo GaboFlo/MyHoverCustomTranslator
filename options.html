@@ -11,7 +11,7 @@
 <body>
     <div class="container">
         <header class="header">
-            <h1>🔤 MyHover Custom Translator</h1>
+            <h1>🔤 Traducteur au survol</h1>
             <p>Configurez votre dictionnaire de traduction personnalisé</p>
         </header>
 
@@ -25,6 +25,29 @@
                         </div>
                     </div>
                     <div class="card-content">
+                        <h3 class="subsection-title">➕ Ajouter une traduction</h3>
+                        <div class="translation-add-form">
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="newTranslationKey">Clé :</label>
+                                    <input type="text" id="newTranslationKey" placeholder="Texte à traduire"
+                                        class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <label for="newTranslationValue">Traduction :</label>
+                                    <input type="text" id="newTranslationValue" placeholder="Traduction"
+                                        class="form-input">
+                                </div>
+                                <div class="form-group">
+                                    <button id="addTranslation" class="btn btn-primary">➕ Ajouter</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="help-text">
+                            <p>💡 Ajoutez rapidement une nouvelle traduction sans modifier le JSON manuellement</p>
+                        </div>
+
+                        <h3 class="subsection-title">📄 Éditeur JSON</h3>
                         <textarea id="translationsJson" placeholder='{
   "hello": "bonjour",
   "world": "monde",
@@ -33,8 +56,7 @@
   }
 }'></textarea>
                         <div class="help-text">
-                            <p>⚠️ Format JSON requis. Supporte les structures imbriquées.</p>
-                            <p>🔍 Recherche insensible à la casse.</p>
+                            <p>🔍 Recherche insensible à la casse, et récursive</p>
                         </div>
                     </div>
                 </section>
@@ -54,8 +76,8 @@
                             </div>
                         </div>
                         <div class="help-text">
-                            <p>📍 Laissez vide pour activer sur tous les sites.</p>
-                            <p>🔗 Utilisez *:// pour les patterns génériques.</p>
+                            <p>📍 Laissez vide pour activer sur tous les sites</p>
+                            <p>🔗 Utilisez *:// pour les patterns génériques</p>
                         </div>
                     </div>
                 </section>
@@ -84,10 +106,10 @@
 
         <footer class="sticky-footer">
             <div class="actions">
-                <button id="saveSettings" class="btn btn-primary">💾 Sauvegarder</button>
-                <button id="resetSettings" class="btn btn-danger">🔄 Réinitialiser</button>
-                <button id="exportSettings" class="btn btn-secondary">📤 Exporter</button>
-                <button id="importSettings" class="btn btn-secondary">📥 Importer</button>
+                <button id="saveOptionsSettings" class="btn btn-primary">💾 Sauvegarder</button>
+                <button id="resetOptionsSettings" class="btn btn-danger">🔄 Réinitialiser</button>
+                <button id="exportOptionsSettings" class="btn btn-secondary">📤 Exporter</button>
+                <button id="importOptionsSettings" class="btn btn-secondary">📥 Importer</button>
             </div>
         </footer>
     </div>

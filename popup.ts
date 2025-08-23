@@ -12,12 +12,11 @@ interface PopupSettings {
 }
 
 interface PopupElements {
-  statusIndicator: HTMLSpanElement;
-  translationCount: HTMLSpanElement;
-  urlCount: HTMLSpanElement;
-  toggleExtension: HTMLButtonElement;
-  toggleText: HTMLSpanElement;
+  siteStatusIndicator: HTMLSpanElement;
   openOptions: HTMLButtonElement;
+  addCurrentSite: HTMLButtonElement;
+  removeCurrentSite: HTMLButtonElement;
+  currentSiteUrl: HTMLInputElement;
 }
 
 class PopupManager {
@@ -36,29 +35,34 @@ class PopupManager {
 
   private cacheElements(): void {
     this.elements = {
-      statusIndicator: document.getElementById(
-        "statusIndicator"
+      siteStatusIndicator: document.getElementById(
+        "siteStatusIndicator"
       ) as HTMLSpanElement,
-      translationCount: document.getElementById(
-        "translationCount"
-      ) as HTMLSpanElement,
-      urlCount: document.getElementById("urlCount") as HTMLSpanElement,
-      toggleExtension: document.getElementById(
-        "toggleExtension"
-      ) as HTMLButtonElement,
-      toggleText: document.getElementById("toggleText") as HTMLSpanElement,
       openOptions: document.getElementById("openOptions") as HTMLButtonElement,
+      addCurrentSite: document.getElementById(
+        "addCurrentSite"
+      ) as HTMLButtonElement,
+      removeCurrentSite: document.getElementById(
+        "removeCurrentSite"
+      ) as HTMLButtonElement,
+      currentSiteUrl: document.getElementById(
+        "currentSiteUrl"
+      ) as HTMLInputElement,
     };
   }
 
   private bindEvents(): void {
     try {
-      this.elements.toggleExtension.addEventListener("click", () => {
-        this.toggleExtension();
-      });
-
       this.elements.openOptions.addEventListener("click", () => {
         this.openOptions();
+      });
+
+      this.elements.addCurrentSite.addEventListener("click", () => {
+        this.addCurrentSite();
+      });
+
+      this.elements.removeCurrentSite.addEventListener("click", () => {
+        this.removeCurrentSite();
       });
     } catch (error) {
       console.error(
@@ -76,70 +80,74 @@ class PopupManager {
         "isEnabled",
       ])) as PopupSettings;
 
-      const translations = result.translations || {};
       const targetUrls = result.targetUrls || [];
       const isEnabled = result.isEnabled !== false;
 
-      this.updateStatusDisplay(translations, targetUrls, isEnabled);
+      await this.updateStatusDisplay(targetUrls, isEnabled);
     } catch (error) {
       console.error("Erreur lors du chargement du statut:", error);
     }
   }
 
-  private updateStatusDisplay(
-    translations: PopupTranslationData,
+  private async updateStatusDisplay(
     targetUrls: string[],
     isEnabled: boolean
-  ): void {
-    const translationCount = this.countKeys(translations);
-    const urlCount =
-      targetUrls.length === 0 ? "Toutes" : targetUrls.length.toString();
-
-    this.elements.translationCount.textContent = translationCount.toString();
-    this.elements.urlCount.textContent = urlCount;
-
-    if (isEnabled) {
-      this.elements.statusIndicator.textContent = "Actif";
-      this.elements.statusIndicator.className = "status-indicator";
-      this.elements.toggleText.textContent = "Désactiver";
-      this.elements.toggleExtension.className = "btn btn-primary";
-    } else {
-      this.elements.statusIndicator.textContent = "Inactif";
-      this.elements.statusIndicator.className = "status-indicator inactive";
-      this.elements.toggleText.textContent = "Activer";
-      this.elements.toggleExtension.className = "btn btn-danger";
-    }
-  }
-
-  private countKeys(obj: PopupTranslationData): number {
-    let count = 0;
-    for (const key in obj) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        count++;
-        if (typeof obj[key] === "object" && obj[key] !== null) {
-          count += this.countKeys(obj[key] as PopupTranslationData);
-        }
-      }
-    }
-    return count;
-  }
-
-  private async toggleExtension(): Promise<void> {
+  ): Promise<void> {
     try {
-      const result = (await chrome.storage.sync.get(["isEnabled"])) as {
-        isEnabled?: boolean;
-      };
-      const currentState = result.isEnabled !== false;
-      const newState = !currentState;
+      // Récupérer l'URL de l'onglet actif
+      const tabs = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      const activeTab = tabs[0];
 
-      await chrome.storage.sync.set({ isEnabled: newState });
-      this.loadStatus();
+      let currentDomain = "";
+      if (activeTab?.url) {
+        currentDomain = new URL(activeTab.url).hostname;
+      }
 
-      const message = newState ? "Extension activée" : "Extension désactivée";
-      this.showNotification(message);
+      const isActiveOnCurrentSite = this.isExtensionActiveOnSite(
+        currentDomain,
+        targetUrls,
+        isEnabled
+      );
+
+      // Afficher le domaine qui sera ajouté
+      this.elements.currentSiteUrl.value = currentDomain;
+
+      // Afficher le statut spécifique au site actuel
+      if (isActiveOnCurrentSite) {
+        this.elements.siteStatusIndicator.textContent = "Actif";
+        this.elements.siteStatusIndicator.className = "status-indicator";
+        this.elements.addCurrentSite.classList.remove("visible");
+        this.elements.removeCurrentSite.classList.add("visible");
+      } else {
+        this.elements.siteStatusIndicator.textContent = "Inactif";
+        this.elements.siteStatusIndicator.className =
+          "status-indicator inactive";
+        this.elements.addCurrentSite.classList.add("visible");
+        this.elements.removeCurrentSite.classList.remove("visible");
+      }
     } catch (error) {
-      console.error("Erreur lors du changement d'état:", error);
+      console.error("Erreur lors de la mise à jour de l'affichage:", error);
     }
+  }
+
+  private isExtensionActiveOnSite(
+    currentDomain: string,
+    targetUrls: string[],
+    isEnabled: boolean
+  ): boolean {
+    if (!isEnabled) return false;
+    if (targetUrls.length === 0) return true; // Actif sur tous les sites
+
+    return targetUrls.some((url) => {
+      if (url.startsWith("*://")) {
+        const pattern = url.replace("*://", "");
+        return currentDomain.includes(pattern);
+      }
+      return currentDomain === url || currentDomain.includes(url);
+    });
   }
 
   private openOptions(): void {
@@ -165,6 +173,90 @@ class PopupManager {
           newTab.location.href = "options.html";
         }
       }
+    }
+  }
+
+  private async addCurrentSite(): Promise<void> {
+    try {
+      // Utiliser le domaine du champ de texte
+      const domain = this.elements.currentSiteUrl.value.trim();
+
+      if (!domain) {
+        this.showNotification("Veuillez saisir un domaine valide");
+        return;
+      }
+
+      // Récupérer les URLs actuelles
+      const result = (await chrome.storage.sync.get(["targetUrls"])) as {
+        targetUrls?: string[];
+      };
+      const currentUrls = result.targetUrls || [];
+
+      // Ajouter le domaine actuel s'il n'est pas déjà présent
+      if (!currentUrls.includes(domain)) {
+        const newUrls = [...currentUrls, domain];
+        await chrome.storage.sync.set({ targetUrls: newUrls });
+
+        this.showNotification(`Site ${domain} ajouté aux URLs ciblées`);
+        this.loadStatus(); // Recharger l'affichage
+
+        // Recharger l'onglet actuel pour que l'extension prenne en compte le nouveau site
+        const tabs = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        const activeTab = tabs[0];
+        if (activeTab?.id) {
+          await chrome.tabs.reload(activeTab.id);
+        }
+      } else {
+        this.showNotification(`Le site ${domain} est déjà dans la liste`);
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'ajout du site:", error);
+      this.showNotification("Erreur lors de l'ajout du site");
+    }
+  }
+
+  private async removeCurrentSite(): Promise<void> {
+    try {
+      // Utiliser le domaine du champ de texte
+      const domain = this.elements.currentSiteUrl.value.trim();
+
+      if (!domain) {
+        this.showNotification("Veuillez saisir un domaine valide");
+        return;
+      }
+
+      // Récupérer les URLs actuelles
+      const result = (await chrome.storage.sync.get(["targetUrls"])) as {
+        targetUrls?: string[];
+      };
+      const currentUrls = result.targetUrls || [];
+
+      // Retirer le domaine actuel s'il est présent
+      if (currentUrls.includes(domain)) {
+        const newUrls = currentUrls.filter((url) => url !== domain);
+        await chrome.storage.sync.set({ targetUrls: newUrls });
+
+        this.showNotification(`Site ${domain} retiré des URLs ciblées`);
+        this.loadStatus(); // Recharger l'affichage
+
+        // Recharger l'onglet actuel pour que l'extension prenne en compte le changement
+        const tabs = await chrome.tabs.query({
+          active: true,
+          currentWindow: true,
+        });
+        const activeTab = tabs[0];
+        if (activeTab?.id) {
+          await chrome.tabs.reload(activeTab.id);
+        }
+      } else {
+        this.showNotification(`Le site ${domain} n'est pas dans la liste`);
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression du site:", error);
+      this.showNotification("Erreur lors de la suppression du site");
     }
   }
 
