@@ -140,7 +140,8 @@ class PopupManager {
 
       // Charger les paramètres du site actuel
       const currentSiteSettings = siteSettings[currentDomain] || {};
-      this.elements.highlightAllWords.checked = currentSiteSettings.highlightAllWords || false;
+      this.elements.highlightAllWords.checked =
+        currentSiteSettings.highlightAllWords || false;
 
       // Afficher le statut spécifique au site actuel
       if (isActiveOnCurrentSite) {
@@ -367,7 +368,8 @@ class PopupManager {
       if (!siteSettings[domain]) {
         siteSettings[domain] = {};
       }
-      siteSettings[domain].highlightAllWords = this.elements.highlightAllWords.checked;
+      siteSettings[domain].highlightAllWords =
+        this.elements.highlightAllWords.checked;
 
       // Sauvegarder
       await chrome.storage.sync.set({ siteSettings });
