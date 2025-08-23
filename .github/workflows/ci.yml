@@ -71,20 +71,9 @@ jobs:
 
           echo "✅ All JavaScript files have content"
 
-      - name: Create test ZIP
-        run: |
-          # Créer un ZIP de test
-          cd dist
-          zip -r "../myhover-translator-test.zip" . -x "*.DS_Store" "*/.*"
-          cd ..
-
-          echo "✅ ZIP de test créé: myhover-translator-test.zip"
-
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: extension-build
-          path: |
-            dist/
-            myhover-translator-test.zip
-          retention-days: 7
+          path: dist/**/*
+          retention-days: 0

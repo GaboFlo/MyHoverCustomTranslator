@@ -1,7 +1,7 @@
-/* eslint-disable no-undef */
-const fs = require("fs");
-const path = require("path");
+import fs from "fs";
+import path from "path";
 
+// eslint-disable-next-line @typescript-eslint/explicit-function-return-type
 const copyFiles = () => {
   const filesToCopy = [
     "manifest.json",
