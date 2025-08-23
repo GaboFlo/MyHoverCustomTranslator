@@ -93,6 +93,7 @@ class HoverTranslator {
       word-wrap: break-word;
       backdrop-filter: blur(10px);
       border: 1px solid rgba(255, 255, 255, 0.2);
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     `;
     document.body.appendChild(this.tooltip);
   }
@@ -138,13 +139,16 @@ class HoverTranslator {
       return;
     }
 
-    const translationResult = this.findTranslation(text);
+    const allTranslations = this.findAllTranslations(text);
 
-    if (translationResult) {
+    if (allTranslations.length > 0) {
       // Retirer l'ancienne bordure et ajouter la nouvelle
       this.removeTranslationBorder();
-      this.addTranslationBorder(target, text, translationResult.matchedKey);
-      this.showTooltip(translationResult.translation, event);
+      this.addMultipleTranslationBorders(target, text, allTranslations);
+
+      // Afficher le tooltip avec toutes les traductions
+      const tooltipText = this.formatMultipleTranslations(allTranslations);
+      this.showTooltip(tooltipText, event);
     }
   }
 
@@ -181,65 +185,86 @@ class HoverTranslator {
     return null;
   }
 
-  private findTranslation(
+  private findAllTranslations(
     text: string
-  ): { translation: string; matchedKey: string } | null {
+  ): Array<{ translation: string; matchedKey: string; isReverse: boolean }> {
     const normalizedText = text.toLowerCase().trim().replace(/\s+/g, " ");
+    const allMatches: Array<{
+      translation: string;
+      matchedKey: string;
+      isReverse: boolean;
+    }> = [];
 
     const findInObject = (
       obj: ContentTranslationData,
       searchText: string
-    ): { translation: string; matchedKey: string } | null => {
-      let partialMatch: {
-        key: string;
-        value: string | ContentTranslationData;
-      } | null = null;
-
+    ): void => {
       for (const [key, value] of Object.entries(obj)) {
         const normalizedKey = key.toLowerCase().trim().replace(/\s+/g, " ");
 
-        // Correspondance exacte (priorité)
+        // Correspondance exacte clé -> valeur
         if (normalizedKey === searchText) {
-          return {
+          allMatches.push({
             translation:
               typeof value === "string" ? value : JSON.stringify(value),
             matchedKey: key,
-          };
+            isReverse: false,
+          });
         }
 
-        // Correspondance partielle (le texte survolé contient la clé)
+        // Correspondance exacte valeur -> clé
+        if (typeof value === "string") {
+          const normalizedValue = value
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " ");
+          if (normalizedValue === searchText) {
+            allMatches.push({
+              translation: key,
+              matchedKey: value,
+              isReverse: true,
+            });
+          }
+        }
+
+        // Correspondance partielle clé -> valeur (le texte survolé contient la clé)
         if (searchText.includes(normalizedKey) && normalizedKey.length > 2) {
-          if (!partialMatch || normalizedKey.length > partialMatch.key.length) {
-            partialMatch = { key: normalizedKey, value };
+          allMatches.push({
+            translation:
+              typeof value === "string" ? value : JSON.stringify(value),
+            matchedKey: key,
+            isReverse: false,
+          });
+        }
+
+        // Correspondance partielle valeur -> clé (le texte survolé contient la valeur)
+        if (typeof value === "string") {
+          const normalizedValue = value
+            .toLowerCase()
+            .trim()
+            .replace(/\s+/g, " ");
+          if (
+            searchText.includes(normalizedValue) &&
+            normalizedValue.length > 2
+          ) {
+            allMatches.push({
+              translation: key,
+              matchedKey: value,
+              isReverse: true,
+            });
           }
         }
 
         if (typeof value === "object" && value !== null) {
-          const nestedResult = findInObject(
-            value as ContentTranslationData,
-            searchText
-          );
-          if (nestedResult) {
-            return nestedResult;
-          }
+          findInObject(value, searchText);
         }
       }
-
-      // Si aucune correspondance exacte, retourner la meilleure correspondance partielle
-      if (partialMatch) {
-        return {
-          translation:
-            typeof partialMatch.value === "string"
-              ? partialMatch.value
-              : JSON.stringify(partialMatch.value),
-          matchedKey: partialMatch.key,
-        };
-      }
-
-      return null;
     };
 
-    return findInObject(this.translations, normalizedText);
+    findInObject(this.translations, normalizedText);
+
+    // Trier par longueur de clé correspondante (les plus longues en premier)
+    return allMatches.sort((a, b) => b.matchedKey.length - a.matchedKey.length);
   }
 
   private shouldTranslateOnPage(): boolean {
@@ -313,10 +338,14 @@ class HoverTranslator {
     this.tooltip.style.top = `${y}px`;
   }
 
-  private addTranslationBorder(
+  private addMultipleTranslationBorders(
     element: Element,
     fullText: string,
-    matchedKey: string
+    allTranslations: Array<{
+      translation: string;
+      matchedKey: string;
+      isReverse: boolean;
+    }>
   ): void {
     if (element.nodeType === Node.ELEMENT_NODE) {
       const el = element as HTMLElement;
@@ -328,27 +357,97 @@ class HoverTranslator {
       el.style.borderRadius = "2px";
       el.setAttribute("data-hover-translator-border", "true");
 
-      // Ajouter le surlignage spécifique du texte correspondant
-      this.highlightMatchedText(el, fullText, matchedKey);
+      // Ajouter le surlignage pour toutes les correspondances
+      this.highlightMultipleMatchedTexts(el, fullText, allTranslations);
     }
   }
 
-  private highlightMatchedText(
+  private formatMultipleTranslations(
+    allTranslations: Array<{
+      translation: string;
+      matchedKey: string;
+      isReverse: boolean;
+    }>
+  ): string {
+    if (allTranslations.length === 1 && allTranslations[0]) {
+      const translation = allTranslations[0];
+      return translation.isReverse
+        ? `⏪ ${translation.translation}`
+        : translation.translation;
+    }
+
+    // Grouper les traductions par type
+    const normalTranslations = allTranslations.filter((t) => !t.isReverse);
+    const reverseTranslations = allTranslations.filter((t) => t.isReverse);
+
+    const parts: string[] = [];
+
+    if (normalTranslations.length > 0) {
+      parts.push(normalTranslations.map((t) => t.translation).join(" | "));
+    }
+
+    if (reverseTranslations.length > 0) {
+      parts.push(
+        `⏪ ${reverseTranslations.map((t) => t.translation).join(" | ")}`
+      );
+    }
+
+    return parts.join(" | ");
+  }
+
+  private highlightMultipleMatchedTexts(
     element: HTMLElement,
     fullText: string,
-    matchedKey: string
+    allTranslations: Array<{
+      translation: string;
+      matchedKey: string;
+      isReverse: boolean;
+    }>
   ): void {
     // Sauvegarder le contenu original
     const originalContent = element.innerHTML;
 
-    // Créer une expression régulière pour trouver le texte correspondant (insensible à la casse)
-    const regex = new RegExp(`(${this.escapeRegExp(matchedKey)})`, "gi");
+    let highlightedContent = fullText;
 
-    // Remplacer le texte correspondant par un span surligné avec un attribut spécial
-    const highlightedContent = fullText.replace(
-      regex,
-      '<span data-hover-translator-highlight="true" style="background-color: #ffeb3b; color: #000; padding: 1px 2px; border-radius: 2px; font-weight: bold; pointer-events: none;">$1</span>'
-    );
+    // Créer un tableau de toutes les clés à surligner avec leurs couleurs
+    const matchesToHighlight = allTranslations.map((translation, index) => {
+      const colors = [
+        { bg: "#ffeb3b", text: "#000" }, // Jaune
+        { bg: "#4caf50", text: "#fff" }, // Vert
+        { bg: "#ff9800", text: "#fff" }, // Orange
+        { bg: "#e91e63", text: "#fff" }, // Rose
+        { bg: "#9c27b0", text: "#fff" }, // Violet
+      ];
+      const color = colors[index % colors.length] || colors[0];
+
+      return {
+        key: translation.matchedKey,
+        isReverse: translation.isReverse,
+        color: color,
+      };
+    });
+
+    // Trier par longueur décroissante pour éviter les conflits de remplacement
+    matchesToHighlight.sort((a, b) => b.key.length - a.key.length);
+
+    // Appliquer les surlignages
+    matchesToHighlight.forEach((match, index) => {
+      if (match.color) {
+        const regex = new RegExp(`(${this.escapeRegExp(match.key)})`, "gi");
+        const reverseIndicator = match.isReverse ? "⏪ " : "";
+
+        highlightedContent = highlightedContent.replace(
+          regex,
+          `<span data-hover-translator-highlight="true" style="background-color: ${
+            match.color.bg
+          }; color: ${
+            match.color.text
+          }; padding: 1px 2px; border-radius: 2px; font-weight: bold; pointer-events: none;" title="${reverseIndicator}Match ${
+            index + 1
+          }">$1</span>`
+        );
+      }
+    });
 
     // Mettre à jour le contenu de l'élément
     element.innerHTML = highlightedContent;
