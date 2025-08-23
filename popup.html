@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Traducteur personnalisé au survol</title>
     <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="translation-form.css">
 </head>
 
 <body>
@@ -32,6 +33,11 @@
                 </div>
             </div>
 
+            <div class="translation-section">
+                <h3 class="section-title">➕ Ajouter une traduction</h3>
+                <div id="translationFormContainer"></div>
+            </div>
+
             <div class="actions-section">
                 <button id="openOptions" class="btn btn-secondary">
                     ⚙️ Options
@@ -50,6 +56,7 @@
         </footer>
     </div>
 
+    <script src="translation-form.js"></script>
     <script src="popup.js"></script>
 </body>
 

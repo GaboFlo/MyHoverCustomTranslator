@@ -21,6 +21,11 @@ interface PopupElements {
 
 class PopupManager {
   private elements: PopupElements;
+  private translationForm?: unknown;
+
+  public getTranslationForm(): unknown {
+    return this.translationForm;
+  }
 
   constructor() {
     this.elements = {} as PopupElements;
@@ -32,6 +37,7 @@ class PopupManager {
     this.bindEvents();
     this.loadStatus();
     this.updateVersion();
+    this.initTranslationForm();
   }
 
   private cacheElements(): void {
@@ -298,6 +304,26 @@ class PopupManager {
         }
       }, 300);
     }, 2000);
+  }
+
+  private initTranslationForm(): void {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const TranslationFormClass = (window as any).TranslationForm;
+      if (typeof TranslationFormClass === "function") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.translationForm = new TranslationFormClass("translationFormContainer", {
+          onSuccess: (message: string) => {
+            this.showNotification(message);
+          },
+          onError: (message: string) => {
+            this.showNotification(message);
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'initialisation du formulaire de traduction:", error);
+    }
   }
 
   private updateVersion(): void {

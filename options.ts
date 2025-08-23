@@ -31,15 +31,18 @@ interface OptionsElements {
   exportOptionsSettings: HTMLButtonElement;
   importOptionsSettings: HTMLButtonElement;
   importFile: HTMLInputElement;
-  newTranslationKey: HTMLInputElement;
-  newTranslationValue: HTMLInputElement;
-  addTranslation: HTMLButtonElement;
 }
 
 class OptionsManager {
   private elements: OptionsElements;
   private originalSettings: OptionsSettings = {};
   private hasChanges = false;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private translationForm?: any;
+
+  public getTranslationForm(): unknown {
+    return this.translationForm;
+  }
 
   constructor() {
     this.elements = {} as OptionsElements;
@@ -79,15 +82,6 @@ class OptionsManager {
     const importFile = document.getElementById(
       "importFile"
     ) as HTMLInputElement;
-    const newTranslationKey = document.getElementById(
-      "newTranslationKey"
-    ) as HTMLInputElement;
-    const newTranslationValue = document.getElementById(
-      "newTranslationValue"
-    ) as HTMLInputElement;
-    const addTranslation = document.getElementById(
-      "addTranslation"
-    ) as HTMLButtonElement;
 
     this.elements = {
       translationsJson,
@@ -100,9 +94,6 @@ class OptionsManager {
       exportOptionsSettings,
       importOptionsSettings,
       importFile,
-      newTranslationKey,
-      newTranslationValue,
-      addTranslation,
     };
   }
 
@@ -132,9 +123,8 @@ class OptionsManager {
         this.handleFileImport(e);
       });
 
-      this.elements.addTranslation.addEventListener("click", () => {
-        this.addNewTranslation();
-      });
+      // Initialiser le composant de traduction factorisé
+      this.initTranslationForm();
 
       // Événements de détection des changements
       this.elements.translationsJson.addEventListener("input", () => {
@@ -632,15 +622,30 @@ class OptionsManager {
     });
   }
 
-  private addNewTranslation(): void {
-    const key = this.elements.newTranslationKey.value.trim();
-    const value = this.elements.newTranslationValue.value.trim();
-
-    if (!key || !value) {
-      this.showSnackbar("Veuillez remplir les deux champs", "warning");
-      return;
+  private initTranslationForm(): void {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const TranslationFormClass = (window as any).TranslationForm;
+      if (typeof TranslationFormClass === "function") {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        this.translationForm = new TranslationFormClass("translationFormContainer", {
+          onAdd: (key: string, value: string) => {
+            this.handleTranslationAdd(key, value);
+          },
+          onSuccess: (message: string) => {
+            this.showSnackbar(message, "success");
+          },
+          onError: (message: string) => {
+            this.showSnackbar(message, "error");
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Erreur lors de l'initialisation du formulaire de traduction:", error);
     }
+  }
 
+  private handleTranslationAdd(key: string, value: string): void {
     try {
       // Récupérer le JSON actuel
       const currentJson = this.elements.translationsJson.value.trim();
@@ -660,14 +665,8 @@ class OptionsManager {
         2
       );
 
-      // Vider les champs
-      this.elements.newTranslationKey.value = "";
-      this.elements.newTranslationValue.value = "";
-
       // Vérifier les changements
       this.checkForChanges();
-
-      this.showSnackbar(`Traduction "${key}" ajoutée avec succès`, "success");
     } catch {
       this.showSnackbar("Erreur lors de l'ajout de la traduction", "error");
     }

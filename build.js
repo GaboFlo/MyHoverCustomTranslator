@@ -10,6 +10,7 @@ const copyFiles = () => {
     "options.css",
     "popup.html",
     "popup.css",
+    "translation-form.css",
     "example-config.json",
     "README.md",
     "LICENSE",

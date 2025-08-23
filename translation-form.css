@@ -1,0 +1,84 @@
+/* Styles pour le composant de traduction factorisé */
+.translation-add-form {
+  margin: 15px 0;
+}
+
+.translation-add-form .form-row {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.translation-add-form .form-group {
+  flex: 1;
+  min-width: 150px;
+}
+
+.translation-add-form .form-group:last-child {
+  flex: 0 0 auto;
+}
+
+.translation-add-form label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.translation-add-form .form-input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  transition: border-color 0.2s ease;
+}
+
+.translation-add-form .form-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.translation-add-form .btn {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.translation-add-form .btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+}
+
+.translation-add-form .btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.translation-add-form .btn-primary:active {
+  transform: translateY(0);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .translation-add-form .form-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .translation-add-form .form-group:last-child {
+    flex: 1;
+  }
+  
+  .translation-add-form .btn {
+    width: 100%;
+  }
+}
