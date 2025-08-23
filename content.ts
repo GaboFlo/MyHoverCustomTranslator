@@ -127,7 +127,7 @@ class HoverTranslator {
 
     const target = event.target as Element;
 
-    // Ignorer les événements sur les éléments surlignés par l'extension
+    // Ignorer complètement les événements sur les éléments surlignés
     if (target.hasAttribute("data-hover-translator-highlight")) {
       return;
     }
@@ -151,7 +151,7 @@ class HoverTranslator {
   private handleMouseOut(event: MouseEvent): void {
     const target = event.target as Element;
 
-    // Ignorer les événements sur les éléments surlignés par l'extension
+    // Si on quitte un élément surligné, ne rien faire (garder le tooltip)
     if (target.hasAttribute("data-hover-translator-highlight")) {
       return;
     }
@@ -347,7 +347,7 @@ class HoverTranslator {
     // Remplacer le texte correspondant par un span surligné avec un attribut spécial
     const highlightedContent = fullText.replace(
       regex,
-      '<span data-hover-translator-highlight="true" style="background-color: #ffeb3b; color: #000; padding: 1px 2px; border-radius: 2px; font-weight: bold;">$1</span>'
+      '<span data-hover-translator-highlight="true" style="background-color: #ffeb3b; color: #000; padding: 1px 2px; border-radius: 2px; font-weight: bold; pointer-events: none;">$1</span>'
     );
 
     // Mettre à jour le contenu de l'élément
