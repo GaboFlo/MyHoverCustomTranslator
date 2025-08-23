@@ -337,6 +337,9 @@ class PopupManager {
           containerId: string,
           callbacks: unknown
         ) => unknown)("translationFormContainer", {
+          onAdd: async (key: string, value: string): Promise<void> => {
+            await this.handleTranslationAdd(key, value);
+          },
           onSuccess: (message: string): void => {
             this.showNotification(message);
           },
@@ -392,6 +395,71 @@ class PopupManager {
     } catch (error) {
       console.error("Erreur lors de la mise à jour des paramètres:", error);
       this.showNotification("Erreur lors de la mise à jour");
+    }
+  }
+
+  private async handleTranslationAdd(
+    key: string,
+    value: string
+  ): Promise<void> {
+    try {
+      // Récupérer les traductions actuelles
+      const result = (await chrome.storage.sync.get([
+        "translations",
+        "translationPartsCount",
+      ])) as {
+        translations?: Record<string, string>;
+        translationPartsCount?: number;
+      };
+
+      let translations: Record<string, string> = {};
+      const translationPartsCount = result.translationPartsCount || 0;
+
+      // Charger les traductions existantes
+      if (translationPartsCount > 0) {
+        const partKeys = Array.from(
+          { length: translationPartsCount },
+          (_, i) => `translationPart_${i}`
+        );
+        const parts = await chrome.storage.sync.get(partKeys);
+
+        for (let i = 0; i < translationPartsCount; i++) {
+          const partKey = `translationPart_${i}`;
+          if (parts[partKey]) {
+            translations = { ...translations, ...parts[partKey] };
+          }
+        }
+      } else {
+        translations = result.translations || {};
+      }
+
+      // Ajouter la nouvelle traduction
+      translations[key] = value;
+
+      // Sauvegarder
+      if (translationPartsCount > 0 || Object.keys(translations).length > 1000) {
+        // Diviser en parties si nécessaire
+        const entries = Object.entries(translations);
+        const chunkSize = 1000; // Taille maximale par partie
+        const newPartsCount = Math.ceil(entries.length / chunkSize);
+
+        for (let i = 0; i < newPartsCount; i++) {
+          const start = i * chunkSize;
+          const end = start + chunkSize;
+          const part = Object.fromEntries(entries.slice(start, end));
+          await chrome.storage.sync.set({ [`translationPart_${i}`]: part });
+        }
+
+        await chrome.storage.sync.set({ translationPartsCount: newPartsCount });
+      } else {
+        await chrome.storage.sync.set({ translations });
+      }
+
+      this.showNotification(`Traduction "${key}" ajoutée avec succès`);
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la traduction:", error);
+      this.showNotification("Erreur lors de l'ajout de la traduction");
+      throw error; // Propager l'erreur pour que le formulaire puisse la gérer
     }
   }
 

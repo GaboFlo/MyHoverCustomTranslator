@@ -1,8 +1,10 @@
+import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
+import process from "process";
 
 // eslint-disable-next-line @typescript-eslint/explicit-function-return-type
-const copyFiles = () => {
+const build = () => {
   const filesToCopy = [
     "manifest.json",
     "styles.css",
@@ -54,4 +56,15 @@ const copyFiles = () => {
   console.log("📦 Extension prête dans le dossier dist/");
 };
 
-copyFiles();
+// Compiler TypeScript d'abord
+console.log("🔨 Compilation TypeScript...");
+try {
+  execSync("npx tsc", { stdio: "inherit" });
+  console.log("✅ TypeScript compilé");
+} catch (error) {
+  console.error("❌ Erreur lors de la compilation TypeScript:", error);
+  process.exit(1);
+}
+
+// Puis copier les fichiers
+build();

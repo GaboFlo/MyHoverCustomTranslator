@@ -152,3 +152,4 @@ MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ⭐ **N'oubliez pas de donner une étoile si ce projet vous aide !**
 Projet développé avec l'aide de Cursor
+```
