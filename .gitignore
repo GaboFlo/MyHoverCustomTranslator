@@ -1,0 +1,45 @@
+# Fichiers système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Fichiers de développement
+*.log
+*.tmp
+*.temp
+
+# Dossiers de build
+dist/
+build/
+node_modules/
+
+# Fichiers d'environnement
+.env
+.env.local
+.env.production
+
+# Fichiers d'éditeur
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Fichiers de sauvegarde
+*.bak
+*.backup
+
+# Fichiers de test
+coverage/
+.nyc_output/
+
+# Fichiers de cache
+.cache/
+.temp/
+
+# Fichiers de build TypeScript
+dist/
+*.js.map
+
+# Dépendances Node.js
+node_modules/
+package-lock.json

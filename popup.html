@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyHover Custom Translator</title>
+    <link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+    <div class="popup-container">
+        <header class="popup-header">
+            <h1>🔤 MyHover</h1>
+            <p>Traducteur personnalisé</p>
+        </header>
+
+        <main class="popup-content">
+            <div class="status-section">
+                <div class="status-item">
+                    <span class="status-label">État:</span>
+                    <span id="statusIndicator" class="status-indicator">Actif</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">Traductions:</span>
+                    <span id="translationCount" class="status-value">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">URLs ciblées:</span>
+                    <span id="urlCount" class="status-value">Toutes</span>
+                </div>
+            </div>
+
+            <div class="actions-section">
+                <button id="toggleExtension" class="btn btn-primary">
+                    <span id="toggleText">Désactiver</span>
+                </button>
+                <button id="openOptions" class="btn btn-secondary" onclick="window.open('options.html', '_blank')">
+                    ⚙️ Options
+                </button>
+            </div>
+
+            <div class="info-section">
+                <p class="info-text">
+                    Survolez du texte sur cette page pour voir les traductions
+                </p>
+            </div>
+        </main>
+
+        <footer class="popup-footer">
+            <small>Version 1.0.0</small>
+        </footer>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+
+</html>

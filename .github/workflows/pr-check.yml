@@ -1,0 +1,92 @@
+name: Pull Request Check
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  pr-check:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript compilation
+        id: tsc
+        run: |
+          if npm run build; then
+            echo "✅ TypeScript compilation successful"
+            echo "tsc_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ TypeScript compilation failed"
+            echo "tsc_status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Run ESLint
+        id: lint
+        run: |
+          if npm run lint; then
+            echo "✅ ESLint check passed"
+            echo "lint_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ ESLint check failed"
+            echo "lint_status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Check TypeScript errors
+        id: tsc-check
+        run: |
+          if npx tsc --noEmit; then
+            echo "✅ TypeScript type checking passed"
+            echo "tsc_check_status=success" >> $GITHUB_OUTPUT
+          else
+            echo "❌ TypeScript type checking failed"
+            echo "tsc_check_status=failed" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+
+      - name: Comment PR status
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const tscStatus = '${{ steps.tsc.outputs.tsc_status }}';
+            const lintStatus = '${{ steps.lint.outputs.lint_status }}';
+            const tscCheckStatus = '${{ steps.tsc-check.outputs.tsc_check_status }}';
+
+            const allPassed = tscStatus === 'success' && lintStatus === 'success' && tscCheckStatus === 'success';
+
+            const comment = allPassed 
+              ? `## ✅ All checks passed!
+                
+                - ✅ TypeScript compilation: **PASSED**
+                - ✅ ESLint: **PASSED** 
+                - ✅ TypeScript type checking: **PASSED**
+                
+                Your PR is ready for review! 🚀`
+              : `## ❌ Some checks failed
+                
+                - TypeScript compilation: ${tscStatus === 'success' ? '✅ PASSED' : '❌ FAILED'}
+                - ESLint: ${lintStatus === 'success' ? '✅ PASSED' : '❌ FAILED'}
+                - TypeScript type checking: ${tscCheckStatus === 'success' ? '✅ PASSED' : '❌ FAILED'}
+                
+                Please fix the issues before requesting review. 🔧`;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });

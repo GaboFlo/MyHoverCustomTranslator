@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Hover - MyHover</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .test-word {
+            background: #f0f0f0;
+            padding: 5px 10px;
+            border-radius: 4px;
+            margin: 5px;
+            display: inline-block;
+            cursor: pointer;
+        }
+
+        .test-word:hover {
+            background: #e0e0e0;
+        }
+
+        .status {
+            margin: 20px 0;
+            padding: 10px;
+            border-radius: 5px;
+            background: #f8f9fa;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>🧪 Test Hover - MyHover Custom Translator</h1>
+
+    <div class="status" id="status">
+        Chargement...
+    </div>
+
+    <h2>Mots de test</h2>
+    <p>Survolez ces mots pour tester la traduction :</p>
+    <div>
+        <span class="test-word">hello</span>
+        <span class="test-word">world</span>
+        <span class="test-word">welcome</span>
+        <span class="test-word">computer</span>
+        <span class="test-word">software</span>
+    </div>
+
+    <h2>Instructions de test</h2>
+    <ol>
+        <li>Ouvrez la console du navigateur (F12)</li>
+        <li>Rechargez cette page</li>
+        <li>Vérifiez que les logs "🔧 HoverTranslator" apparaissent</li>
+        <li>Survolez les mots ci-dessus</li>
+        <li>Vérifiez les logs dans la console</li>
+    </ol>
+
+    <h2>Configuration requise</h2>
+    <p>Ajoutez ce JSON dans les options de l'extension :</p>
+    <pre><code>{
+  "hello": "bonjour",
+  "world": "monde",
+  "welcome": "bienvenue",
+  "computer": "ordinateur",
+  "software": "logiciel"
+}</code></pre>
+
+    <script>
+        // Test pour vérifier que l'extension est chargée
+        function checkExtension() {
+            const status = document.getElementById('status');
+
+            // Vérifier si l'extension est active
+            if (typeof chrome !== 'undefined' && chrome.runtime) {
+                status.textContent = '✅ Extension détectée - Vérifiez la console pour les logs';
+                status.className = 'status success';
+            } else {
+                status.textContent = '❌ Extension non détectée - Vérifiez l\'installation';
+                status.className = 'status error';
+            }
+        }
+
+        // Vérifier au chargement
+        window.addEventListener('load', checkExtension);
+
+        // Vérifier toutes les 2 secondes
+        setInterval(checkExtension, 2000);
+
+        // Log pour confirmer que la page est chargée
+        console.log('🔧 Page de test chargée - Prêt pour les tests de hover');
+    </script>
+</body>
+
+</html>

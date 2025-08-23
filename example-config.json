@@ -1,0 +1,36 @@
+{
+    "version": "1.0.0",
+    "exportDate": "2024-01-01T00:00:00.000Z",
+    "translations": {
+        "hello": "bonjour",
+        "world": "monde",
+        "welcome": "bienvenue",
+        "goodbye": "au revoir",
+        "thank you": "merci",
+        "please": "s'il vous plaît",
+        "yes": "oui",
+        "no": "non",
+        "computer": "ordinateur",
+        "software": "logiciel",
+        "programming": "programmation",
+        "developer": "développeur",
+        "nested": {
+            "example": "exemple imbriqué",
+            "test": "test imbriqué",
+            "demo": "démonstration imbriquée"
+        },
+        "technical": {
+            "api": "interface de programmation",
+            "framework": "cadre de développement",
+            "library": "bibliothèque",
+            "database": "base de données"
+        }
+    },
+    "targetUrls": [
+        "github.com",
+        "stackoverflow.com",
+        "developer.mozilla.org"
+    ],
+    "isEnabled": true,
+    "delay": 300
+}

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MyHover Custom Translator - Options</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>🔤 MyHover Custom Translator</h1>
+            <p>Configurez votre dictionnaire de traduction personnalisé</p>
+        </header>
+
+        <main class="main-content">
+            <div class="settings-grid">
+                <section class="setting-card">
+                    <div class="card-header">
+                        <h2>📝 Dictionnaire de traduction</h2>
+                        <div style="display: flex; gap: 10px;">
+                            <button id="formatAndValidateJson" class="btn btn-secondary">✨ Vérifier le format</button>
+                        </div>
+                    </div>
+                    <div class="card-content">
+                        <textarea id="translationsJson" placeholder='{
+  "hello": "bonjour",
+  "world": "monde",
+  "nested": {
+    "example": "exemple imbriqué"
+  }
+}'></textarea>
+                        <div class="help-text">
+                            <p>⚠️ Format JSON requis. Supporte les structures imbriquées.</p>
+                            <p>🔍 Recherche insensible à la casse.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="setting-card">
+                    <div class="card-header">
+                        <h2>🌐 URLs ciblées</h2>
+                    </div>
+                    <div class="card-content">
+                        <div id="urlList" class="url-list">
+                            <div class="url-item">
+                                <input type="text" placeholder="exemple.com" class="url-input">
+                                <div class="url-buttons">
+                                    <button class="btn btn-secondary add-url" title="Ajouter une URL">➕</button>
+                                    <button class="btn btn-danger remove-url" title="Supprimer cette URL">🗑️</button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="help-text">
+                            <p>📍 Laissez vide pour activer sur tous les sites.</p>
+                            <p>🔗 Utilisez *:// pour les patterns génériques.</p>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="setting-card">
+                    <div class="card-header">
+                        <h2>⚙️ Paramètres généraux</h2>
+                    </div>
+                    <div class="card-content">
+                        <div class="setting-item">
+                            <label class="toggle-label">
+                                <input type="checkbox" id="isEnabled" checked>
+                                <span class="toggle-slider"></span>
+                                <span class="toggle-text">Activer la traduction au survol</span>
+                            </label>
+                        </div>
+                        <div class="setting-item">
+                            <label for="delayInput">Délai d'affichage (ms):</label>
+                            <input type="number" id="delayInput" value="300" min="0" max="2000" step="100">
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+        </main>
+
+        <footer class="sticky-footer">
+            <div class="actions">
+                <button id="saveSettings" class="btn btn-primary">💾 Sauvegarder</button>
+                <button id="resetSettings" class="btn btn-danger">🔄 Réinitialiser</button>
+                <button id="exportSettings" class="btn btn-secondary">📤 Exporter</button>
+                <button id="importSettings" class="btn btn-secondary">📥 Importer</button>
+            </div>
+        </footer>
+    </div>
+
+    <input type="file" id="importFile" accept=".json" style="display: none;">
+
+    <script src="options.js"></script>
+</body>
+
+</html>

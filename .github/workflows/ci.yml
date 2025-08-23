@@ -1,0 +1,94 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run TypeScript compilation check
+        run: npm run build
+
+      - name: Run ESLint
+        run: npm run lint
+
+      - name: Check for TypeScript errors
+        run: npx tsc --noEmit
+
+      - name: Verify build output
+        run: |
+          if [ ! -d "dist" ]; then
+            echo "❌ Build directory 'dist' not found"
+            exit 1
+          fi
+
+          if [ ! -f "dist/manifest.json" ]; then
+            echo "❌ manifest.json not found in dist directory"
+            exit 1
+          fi
+
+          if [ ! -f "dist/content.js" ]; then
+            echo "❌ content.js not found in dist directory"
+            exit 1
+          fi
+
+          if [ ! -f "dist/options.js" ]; then
+            echo "❌ options.js not found in dist directory"
+            exit 1
+          fi
+
+          if [ ! -f "dist/popup.js" ]; then
+            echo "❌ popup.js not found in dist directory"
+            exit 1
+          fi
+
+          echo "✅ All build files present"
+
+          # Vérifier que les fichiers JS ne sont pas vides
+          for file in dist/*.js; do
+            if [ ! -s "$file" ]; then
+              echo "❌ $file is empty"
+              exit 1
+            fi
+          done
+
+          echo "✅ All JavaScript files have content"
+
+      - name: Create test ZIP
+        run: |
+          # Créer un ZIP de test
+          cd dist
+          zip -r "../myhover-translator-test-${{ matrix.node-version }}.zip" . -x "*.DS_Store" "*/.*"
+          cd ..
+          
+          echo "✅ ZIP de test créé: myhover-translator-test-${{ matrix.node-version }}.zip"
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: extension-build-${{ matrix.node-version }}
+          path: |
+            dist/
+            myhover-translator-test-${{ matrix.node-version }}.zip
+          retention-days: 7
