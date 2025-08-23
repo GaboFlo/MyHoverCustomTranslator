@@ -10,6 +10,11 @@ interface ContentSettings {
   isEnabled?: boolean;
   delay?: number;
   translationPartsCount?: number;
+  siteSettings?: { [domain: string]: ContentSiteSettings };
+}
+
+interface ContentSiteSettings {
+  highlightAllWords?: boolean;
 }
 
 class HoverTranslator {
@@ -22,6 +27,9 @@ class HoverTranslator {
   private searchOverlay: HTMLDivElement | null = null;
   private searchInput: HTMLInputElement | null = null;
   private searchResults: HTMLElement[] = [];
+  private siteSettings: { [domain: string]: ContentSiteSettings } = {};
+  private currentDomain: string = "";
+  private highlightedElements: HTMLElement[] = [];
 
   constructor() {
     this.init();
@@ -32,6 +40,7 @@ class HoverTranslator {
     this.createTooltip();
     this.bindEvents();
     this.observePageChanges();
+    this.initializeAutoHighlighting();
   }
 
   private async loadSettings(): Promise<void> {
@@ -42,6 +51,7 @@ class HoverTranslator {
         "isEnabled",
         "delay",
         "translationPartsCount",
+        "siteSettings",
       ])) as ContentSettings;
 
       let translations: ContentTranslationData = {};
@@ -70,6 +80,8 @@ class HoverTranslator {
       this.translations = translations;
       this.targetUrls = result.targetUrls || [];
       this.isEnabled = result.isEnabled !== false;
+      this.siteSettings = result.siteSettings || {};
+      this.currentDomain = window.location.hostname;
     } catch (error) {
       console.error("❌ Erreur lors du chargement des paramètres:", error);
     }
@@ -137,6 +149,11 @@ class HoverTranslator {
       return;
     }
 
+    // Ignorer les éléments auto-surlignés (ils ont leur propre gestion)
+    if (target.hasAttribute("data-auto-highlight")) {
+      return;
+    }
+
     const text = this.getTextFromElement(target);
 
     if (!text || text.length < 2) {
@@ -164,6 +181,11 @@ class HoverTranslator {
       return;
     }
 
+    // Si on quitte un élément auto-surligné, ne rien faire (garder le tooltip)
+    if (target.hasAttribute("data-auto-highlight")) {
+      return;
+    }
+
     this.hideTooltip();
     this.removeTranslationBorder();
   }
@@ -188,6 +210,11 @@ class HoverTranslator {
   }
 
   private getTextFromElement(element: Element): string | null {
+    // Ignorer les éléments auto-surlignés
+    if (element.hasAttribute("data-auto-highlight")) {
+      return null;
+    }
+
     if (element.nodeType === Node.TEXT_NODE) {
       return element.textContent?.trim() || null;
     }
@@ -811,21 +838,23 @@ class HoverTranslator {
         "data-hover-translator-border"
       );
 
-      // Restaurer le contenu original
-      const originalContent = this.currentHoveredElement.getAttribute(
-        "data-original-content"
-      );
-      if (originalContent) {
-        this.currentHoveredElement.innerHTML = originalContent;
-        this.currentHoveredElement.removeAttribute("data-original-content");
+      // Restaurer le contenu original seulement si ce n'est pas un élément auto-surligné
+      if (!this.currentHoveredElement.hasAttribute("data-auto-highlighted")) {
+        const originalContent = this.currentHoveredElement.getAttribute(
+          "data-original-content"
+        );
+        if (originalContent) {
+          this.currentHoveredElement.innerHTML = originalContent;
+          this.currentHoveredElement.removeAttribute("data-original-content");
+        }
       }
 
       this.currentHoveredElement = null;
     }
 
-    // Nettoyage de sécurité pour tous les éléments avec l'attribut
+    // Nettoyage de sécurité pour tous les éléments avec l'attribut (sauf auto-surlignés)
     const elementsWithBorder = document.querySelectorAll(
-      "[data-hover-translator-border]"
+      "[data-hover-translator-border]:not([data-auto-highlighted])"
     );
     elementsWithBorder.forEach((element) => {
       const el = element as HTMLElement;
@@ -841,6 +870,187 @@ class HoverTranslator {
         el.removeAttribute("data-original-content");
       }
     });
+  }
+
+  private initializeAutoHighlighting(): void {
+    const currentSiteSettings = this.siteSettings[this.currentDomain];
+    if (
+      currentSiteSettings?.highlightAllWords &&
+      this.shouldTranslateOnPage()
+    ) {
+      // Attendre que la page soit complètement chargée
+      if (document.readyState === "loading") {
+        document.addEventListener("DOMContentLoaded", () => {
+          this.highlightAllKnownWords();
+        });
+      } else {
+        this.highlightAllKnownWords();
+      }
+
+      // Observer les changements de contenu pour surligner les nouveaux éléments
+      this.observeContentChanges();
+    }
+  }
+
+  private observeContentChanges(): void {
+    const observer = new MutationObserver((mutations) => {
+      const currentSiteSettings = this.siteSettings[this.currentDomain];
+      if (!currentSiteSettings?.highlightAllWords) return;
+
+      let shouldUpdate = false;
+      mutations.forEach((mutation) => {
+        if (mutation.type === "childList" && mutation.addedNodes.length > 0) {
+          shouldUpdate = true;
+        }
+      });
+
+      if (shouldUpdate) {
+        // Débounce pour éviter trop d'appels
+        setTimeout(() => {
+          this.highlightAllKnownWords();
+        }, 500);
+      }
+    });
+
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  private highlightAllKnownWords(): void {
+    // Parcourir tous les nœuds de texte de la page
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (node) => {
+          const parent = node.parentElement;
+          if (
+            !parent ||
+            parent.closest(
+              "#hover-translator-search-overlay, #hover-translator-tooltip, [data-auto-highlighted]"
+            ) ||
+            parent.hasAttribute("data-auto-highlighted")
+          ) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      }
+    );
+
+    const textNodes: Text[] = [];
+    let node = walker.nextNode();
+    while (node) {
+      textNodes.push(node as Text);
+      node = walker.nextNode();
+    }
+
+    textNodes.forEach((textNode) => {
+      const text = textNode.textContent?.trim();
+      if (!text || text.length < 2) return;
+
+      const parentElement = textNode.parentElement;
+      if (!parentElement || parentElement.hasAttribute("data-auto-highlighted"))
+        return;
+
+      // Chercher des correspondances dans ce texte
+      const allTranslations = this.findAllTranslations(text);
+
+      if (allTranslations.length > 0) {
+        this.autoHighlightElement(parentElement, text, allTranslations);
+      }
+    });
+  }
+
+  private autoHighlightElement(
+    element: HTMLElement,
+    fullText: string,
+    allTranslations: Array<{
+      translation: string;
+      matchedKey: string;
+      isReverse: boolean;
+      position: number;
+    }>
+  ): void {
+    // Éviter de traiter plusieurs fois le même élément
+    if (element.hasAttribute("data-auto-highlighted")) return;
+
+    // Sauvegarder le contenu original
+    const originalContent = element.innerHTML;
+    element.setAttribute("data-original-auto-content", originalContent);
+    element.setAttribute("data-auto-highlighted", "true");
+
+    let highlightedContent = fullText;
+
+    // Créer un tableau de toutes les clés à surligner avec leurs couleurs
+    const matchesToHighlight = allTranslations.map((translation, index) => {
+      const colors = [
+        { bg: "#ffeb3b80", text: "#000" }, // Jaune semi-transparent
+        { bg: "#4caf5080", text: "#000" }, // Vert semi-transparent
+        { bg: "#ff980080", text: "#000" }, // Orange semi-transparent
+        { bg: "#e91e6380", text: "#fff" }, // Rose semi-transparent
+        { bg: "#9c27b080", text: "#fff" }, // Violet semi-transparent
+      ];
+      const color = colors[index % colors.length] || colors[0];
+
+      return {
+        key: translation.matchedKey,
+        isReverse: translation.isReverse,
+        color: color,
+        position: translation.position,
+        translation: translation.translation,
+      };
+    });
+
+    // Trier par position d'apparition dans le texte (ordre naturel)
+    matchesToHighlight.sort((a, b) => a.position - b.position);
+
+    // Appliquer les surlignages dans l'ordre d'apparition
+    matchesToHighlight.forEach((match) => {
+      if (match.color) {
+        const regex = new RegExp(`(${this.escapeRegExp(match.key)})`, "gi");
+        const reverseIndicator = match.isReverse ? "⏪ " : "";
+
+        highlightedContent = highlightedContent.replace(
+          regex,
+          `<span data-auto-highlight="true" style="background-color: ${match.color.bg}; color: ${match.color.text}; padding: 1px 2px; border-radius: 2px; cursor: pointer;" title="${reverseIndicator}${match.translation}" data-translation="${match.translation}" data-is-reverse="${match.isReverse}">$1</span>`
+        );
+      }
+    });
+
+    // Mettre à jour le contenu de l'élément
+    element.innerHTML = highlightedContent;
+
+    // Ajouter l'élément à la liste des éléments surlignés
+    this.highlightedElements.push(element);
+
+    // Ajouter des événements pour les spans surlignés
+    const highlightedSpans = element.querySelectorAll("[data-auto-highlight]");
+    highlightedSpans.forEach((span) => {
+      span.addEventListener("mouseenter", (event) => {
+        this.showAutoHighlightTooltip(event as MouseEvent, span as HTMLElement);
+      });
+      span.addEventListener("mouseleave", () => {
+        this.hideTooltip();
+      });
+    });
+  }
+
+  private showAutoHighlightTooltip(
+    event: MouseEvent,
+    element: HTMLElement
+  ): void {
+    const translation = element.getAttribute("data-translation");
+    const isReverse = element.getAttribute("data-is-reverse") === "true";
+
+    if (translation && this.tooltip) {
+      const tooltipText = isReverse ? `⏪ ${translation}` : translation;
+      this.tooltip.textContent = tooltipText;
+      this.tooltip.style.opacity = "1";
+      this.positionTooltip(event);
+    }
   }
 }
 

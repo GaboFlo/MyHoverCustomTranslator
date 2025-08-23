@@ -9,6 +9,11 @@ interface PopupSettings {
   isEnabled?: boolean;
   delay?: number;
   translationPartsCount?: number;
+  siteSettings?: { [domain: string]: SiteSettings };
+}
+
+interface SiteSettings {
+  highlightAllWords?: boolean;
 }
 
 interface PopupElements {
@@ -17,6 +22,7 @@ interface PopupElements {
   addCurrentSite: HTMLButtonElement;
   removeCurrentSite: HTMLButtonElement;
   currentSiteUrl: HTMLInputElement;
+  highlightAllWords: HTMLInputElement;
 }
 
 class PopupManager {
@@ -55,6 +61,9 @@ class PopupManager {
       currentSiteUrl: document.getElementById(
         "currentSiteUrl"
       ) as HTMLInputElement,
+      highlightAllWords: document.getElementById(
+        "highlightAllWords"
+      ) as HTMLInputElement,
     };
   }
 
@@ -71,6 +80,10 @@ class PopupManager {
       this.elements.removeCurrentSite.addEventListener("click", () => {
         this.removeCurrentSite();
       });
+
+      this.elements.highlightAllWords.addEventListener("change", () => {
+        this.updateSiteSettings();
+      });
     } catch (error) {
       console.error(
         "❌ Erreur lors de la liaison des événements popup:",
@@ -85,12 +98,14 @@ class PopupManager {
         "translations",
         "targetUrls",
         "isEnabled",
+        "siteSettings",
       ])) as PopupSettings;
 
       const targetUrls = result.targetUrls || [];
       const isEnabled = result.isEnabled !== false;
+      const siteSettings = result.siteSettings || {};
 
-      await this.updateStatusDisplay(targetUrls, isEnabled);
+      await this.updateStatusDisplay(targetUrls, isEnabled, siteSettings);
     } catch (error) {
       console.error("Erreur lors du chargement du statut:", error);
     }
@@ -98,7 +113,8 @@ class PopupManager {
 
   private async updateStatusDisplay(
     targetUrls: string[],
-    isEnabled: boolean
+    isEnabled: boolean,
+    siteSettings: { [domain: string]: SiteSettings }
   ): Promise<void> {
     try {
       // Récupérer l'URL de l'onglet actif
@@ -121,6 +137,10 @@ class PopupManager {
 
       // Afficher le domaine qui sera ajouté
       this.elements.currentSiteUrl.value = currentDomain;
+
+      // Charger les paramètres du site actuel
+      const currentSiteSettings = siteSettings[currentDomain] || {};
+      this.elements.highlightAllWords.checked = currentSiteSettings.highlightAllWords || false;
 
       // Afficher le statut spécifique au site actuel
       if (isActiveOnCurrentSite) {
@@ -329,6 +349,47 @@ class PopupManager {
         "Erreur lors de l'initialisation du formulaire de traduction:",
         error
       );
+    }
+  }
+
+  private async updateSiteSettings(): Promise<void> {
+    try {
+      const domain = this.elements.currentSiteUrl.value.trim();
+      if (!domain) return;
+
+      // Récupérer les paramètres actuels
+      const result = (await chrome.storage.sync.get(["siteSettings"])) as {
+        siteSettings?: { [domain: string]: SiteSettings };
+      };
+      const siteSettings = result.siteSettings || {};
+
+      // Mettre à jour les paramètres pour ce site
+      if (!siteSettings[domain]) {
+        siteSettings[domain] = {};
+      }
+      siteSettings[domain].highlightAllWords = this.elements.highlightAllWords.checked;
+
+      // Sauvegarder
+      await chrome.storage.sync.set({ siteSettings });
+
+      // Recharger l'onglet actuel pour appliquer les changements
+      const tabs = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      const activeTab = tabs[0];
+      if (activeTab?.id) {
+        await chrome.tabs.reload(activeTab.id);
+      }
+
+      this.showNotification(
+        this.elements.highlightAllWords.checked
+          ? "Surlignage automatique activé"
+          : "Surlignage automatique désactivé"
+      );
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour des paramètres:", error);
+      this.showNotification("Erreur lors de la mise à jour");
     }
   }
 
