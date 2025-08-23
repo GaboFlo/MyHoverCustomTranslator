@@ -16,10 +16,7 @@ class TranslationForm {
   private elements!: TranslationFormElements;
   private callbacks: TranslationFormCallbacks;
 
-  constructor(
-    containerId: string,
-    callbacks: TranslationFormCallbacks = {}
-  ) {
+  constructor(containerId: string, callbacks: TranslationFormCallbacks = {}) {
     this.callbacks = callbacks;
     this.createForm(containerId);
     this.bindEvents();
@@ -52,10 +49,16 @@ class TranslationForm {
 
     // Cache les éléments
     this.elements = {
-      keyInput: document.getElementById(`translationKey_${containerId}`) as HTMLInputElement,
-      valueInput: document.getElementById(`translationValue_${containerId}`) as HTMLInputElement,
-      addButton: document.getElementById(`translationAdd_${containerId}`) as HTMLButtonElement,
-      container: container
+      keyInput: document.getElementById(
+        `translationKey_${containerId}`
+      ) as HTMLInputElement,
+      valueInput: document.getElementById(
+        `translationValue_${containerId}`
+      ) as HTMLInputElement,
+      addButton: document.getElementById(
+        `translationAdd_${containerId}`
+      ) as HTMLButtonElement,
+      container: container,
     };
   }
 
@@ -102,7 +105,7 @@ class TranslationForm {
       this.elements.valueInput.value = "";
       this.elements.keyInput.focus();
 
-      const message = `Traduction "${key}" ajoutée avec succès`;
+      const message = `Traduction "${key}" ajoutée avec succès, rechargez la page pour voir les changements`;
       this.callbacks.onSuccess?.(message);
     } catch (error) {
       const message = "Erreur lors de l'ajout de la traduction";
@@ -114,11 +117,11 @@ class TranslationForm {
     // Récupérer les traductions actuelles
     const result = await chrome.storage.sync.get([
       "translations",
-      "translationPartsCount"
+      "translationPartsCount",
     ]);
 
     let translations: Record<string, string> = {};
-    let translationPartsCount = result["translationPartsCount"] || 0;
+    const translationPartsCount = result["translationPartsCount"] || 0;
 
     // Charger les traductions existantes
     if (translationPartsCount > 0) {
@@ -127,7 +130,7 @@ class TranslationForm {
         (_, i) => `translationPart_${i}`
       );
       const parts = await chrome.storage.sync.get(partKeys);
-      
+
       for (let i = 0; i < translationPartsCount; i++) {
         const partKey = `translationPart_${i}`;
         if (parts[partKey]) {
@@ -147,14 +150,14 @@ class TranslationForm {
       const entries = Object.entries(translations);
       const chunkSize = 1000; // Taille maximale par partie
       const newPartsCount = Math.ceil(entries.length / chunkSize);
-      
+
       for (let i = 0; i < newPartsCount; i++) {
         const start = i * chunkSize;
         const end = start + chunkSize;
         const part = Object.fromEntries(entries.slice(start, end));
         await chrome.storage.sync.set({ [`translationPart_${i}`]: part });
       }
-      
+
       await chrome.storage.sync.set({ translationPartsCount: newPartsCount });
     } else {
       await chrome.storage.sync.set({ translations });
@@ -181,4 +184,5 @@ class TranslationForm {
 }
 
 // Exporter pour utilisation globale
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 (window as any).TranslationForm = TranslationForm;

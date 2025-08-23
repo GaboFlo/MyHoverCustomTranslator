@@ -73,11 +73,11 @@
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .translation-add-form .form-group:last-child {
     flex: 1;
   }
-  
+
   .translation-add-form .btn {
     width: 100%;
   }
