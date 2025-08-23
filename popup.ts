@@ -140,14 +140,19 @@ class PopupManager {
     isEnabled: boolean
   ): boolean {
     if (!isEnabled) return false;
-    if (targetUrls.length === 0) return true; // Actif sur tous les sites
+    if (targetUrls.length === 0) return false; // Inactif si aucune URL spécifiée
 
     return targetUrls.some((url) => {
       if (url.startsWith("*://")) {
         const pattern = url.replace("*://", "");
         return currentDomain.includes(pattern);
       }
-      return currentDomain === url || currentDomain.includes(url);
+      // Correspondance exacte ou correspondance de domaine
+      return (
+        currentDomain === url ||
+        currentDomain.endsWith(`.${url}`) ||
+        currentDomain === url
+      );
     });
   }
 
