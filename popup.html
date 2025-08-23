@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Traducteur personnalisé au survol</title>
     <link rel="stylesheet" href="popup.css">
+    <link rel="stylesheet" href="translation-form.css">
 </head>
 
 <body>
@@ -30,11 +31,20 @@
                 <div class="url-input-section">
                     <input type="text" id="currentSiteUrl" class="url-input" placeholder="Domaine">
                 </div>
+                <div class="site-options-section">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="highlightAllWords" class="checkbox-input">
+                        <span class="checkbox-custom"></span>
+                        <span class="checkbox-text">Surligner tous les mots connus</span>
+                    </label>
+                </div>
             </div>
+
+
 
             <div class="actions-section">
                 <button id="openOptions" class="btn btn-secondary">
-                    ⚙️ Options
+                    ⚙️ Options ↗️
                 </button>
             </div>
 

@@ -3,6 +3,11 @@
     "name": "Traducteur personnalisé au survol",
     "version": "0.0.1",
     "description": "Extension de traduction au survol avec dictionnaire personnalisable",
+    "browser_specific_settings": {
+        "gecko": {
+            "id": "myhover-translator@gaboflo.fr"
+        }
+    },
     "permissions": [
         "storage",
         "activeTab"

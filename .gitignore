@@ -42,3 +42,5 @@ dist/
 
 # Dépendances Node.js
 node_modules/
+
+dist.zip

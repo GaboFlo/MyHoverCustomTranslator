@@ -9,6 +9,11 @@ interface PopupSettings {
   isEnabled?: boolean;
   delay?: number;
   translationPartsCount?: number;
+  siteSettings?: { [domain: string]: SiteSettings };
+}
+
+interface SiteSettings {
+  highlightAllWords?: boolean;
 }
 
 interface PopupElements {
@@ -17,6 +22,7 @@ interface PopupElements {
   addCurrentSite: HTMLButtonElement;
   removeCurrentSite: HTMLButtonElement;
   currentSiteUrl: HTMLInputElement;
+  highlightAllWords: HTMLInputElement;
 }
 
 class PopupManager {
@@ -49,6 +55,9 @@ class PopupManager {
       currentSiteUrl: document.getElementById(
         "currentSiteUrl"
       ) as HTMLInputElement,
+      highlightAllWords: document.getElementById(
+        "highlightAllWords"
+      ) as HTMLInputElement,
     };
   }
 
@@ -65,6 +74,10 @@ class PopupManager {
       this.elements.removeCurrentSite.addEventListener("click", () => {
         this.removeCurrentSite();
       });
+
+      this.elements.highlightAllWords.addEventListener("change", () => {
+        this.updateSiteSettings();
+      });
     } catch (error) {
       console.error(
         "❌ Erreur lors de la liaison des événements popup:",
@@ -79,12 +92,14 @@ class PopupManager {
         "translations",
         "targetUrls",
         "isEnabled",
+        "siteSettings",
       ])) as PopupSettings;
 
       const targetUrls = result.targetUrls || [];
       const isEnabled = result.isEnabled !== false;
+      const siteSettings = result.siteSettings || {};
 
-      await this.updateStatusDisplay(targetUrls, isEnabled);
+      await this.updateStatusDisplay(targetUrls, isEnabled, siteSettings);
     } catch (error) {
       console.error("Erreur lors du chargement du statut:", error);
     }
@@ -92,7 +107,8 @@ class PopupManager {
 
   private async updateStatusDisplay(
     targetUrls: string[],
-    isEnabled: boolean
+    isEnabled: boolean,
+    siteSettings: { [domain: string]: SiteSettings }
   ): Promise<void> {
     try {
       // Récupérer l'URL de l'onglet actif
@@ -115,6 +131,11 @@ class PopupManager {
 
       // Afficher le domaine qui sera ajouté
       this.elements.currentSiteUrl.value = currentDomain;
+
+      // Charger les paramètres du site actuel
+      const currentSiteSettings = siteSettings[currentDomain] || {};
+      this.elements.highlightAllWords.checked =
+        currentSiteSettings.highlightAllWords || false;
 
       // Afficher le statut spécifique au site actuel
       if (isActiveOnCurrentSite) {
@@ -140,21 +161,26 @@ class PopupManager {
     isEnabled: boolean
   ): boolean {
     if (!isEnabled) return false;
-    if (targetUrls.length === 0) return true; // Actif sur tous les sites
+    if (targetUrls.length === 0) return false; // Inactif si aucune URL spécifiée
 
     return targetUrls.some((url) => {
       if (url.startsWith("*://")) {
         const pattern = url.replace("*://", "");
         return currentDomain.includes(pattern);
       }
-      return currentDomain === url || currentDomain.includes(url);
+      // Correspondance exacte ou correspondance de domaine
+      return (
+        currentDomain === url ||
+        currentDomain.endsWith(`.${url}`) ||
+        currentDomain === url
+      );
     });
   }
 
   private openOptions(): void {
     try {
       // Méthode 1 : API Chrome standard
-      if (chrome && chrome.runtime && chrome.runtime.openOptionsPage) {
+      if (chrome?.runtime?.openOptionsPage) {
         chrome.runtime.openOptionsPage();
       } else {
         // Méthode 2 : Fallback avec getURL
@@ -198,7 +224,10 @@ class PopupManager {
         const newUrls = [...currentUrls, domain];
         await chrome.storage.sync.set({ targetUrls: newUrls });
 
-        this.showNotification(`Site ${domain} ajouté aux URLs ciblées`);
+        this.showNotification(
+          `Site ${domain} ajouté aux URLs ciblées`,
+          "success"
+        );
         this.loadStatus(); // Recharger l'affichage
 
         // Recharger l'onglet actuel pour que l'extension prenne en compte le nouveau site
@@ -211,11 +240,14 @@ class PopupManager {
           await chrome.tabs.reload(activeTab.id);
         }
       } else {
-        this.showNotification(`Le site ${domain} est déjà dans la liste`);
+        this.showNotification(
+          `Le site ${domain} est déjà dans la liste`,
+          "error"
+        );
       }
     } catch (error) {
       console.error("Erreur lors de l'ajout du site:", error);
-      this.showNotification("Erreur lors de l'ajout du site");
+      this.showNotification("Erreur lors de l'ajout du site", "error");
     }
   }
 
@@ -240,7 +272,10 @@ class PopupManager {
         const newUrls = currentUrls.filter((url) => url !== domain);
         await chrome.storage.sync.set({ targetUrls: newUrls });
 
-        this.showNotification(`Site ${domain} retiré des URLs ciblées`);
+        this.showNotification(
+          `Site ${domain} retiré des URLs ciblées`,
+          "success"
+        );
         this.loadStatus(); // Recharger l'affichage
 
         // Recharger l'onglet actuel pour que l'extension prenne en compte le changement
@@ -253,31 +288,40 @@ class PopupManager {
           await chrome.tabs.reload(activeTab.id);
         }
       } else {
-        this.showNotification(`Le site ${domain} n'est pas dans la liste`);
+        this.showNotification(
+          `Le site ${domain} n'est pas dans la liste`,
+          "error"
+        );
       }
     } catch (error) {
       console.error("Erreur lors de la suppression du site:", error);
-      this.showNotification("Erreur lors de la suppression du site");
+      this.showNotification("Erreur lors de la suppression du site", "error");
     }
   }
 
-  private showNotification(message: string): void {
+  private showNotification(
+    message: string,
+    type: "success" | "error" = "success"
+  ): void {
     const notification = document.createElement("div");
     notification.className = "notification";
     notification.textContent = message;
+
+    const backgroundColor = type === "success" ? "#28a745" : "#fd7e14";
+
     notification.style.cssText = `
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: #28a745;
-      color: white;
-      padding: 8px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      z-index: 10000;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    `;
+       position: fixed;
+       top: 10px;
+       right: 10px;
+       background: ${backgroundColor};
+       color: white;
+       padding: 8px 12px;
+       border-radius: 6px;
+       font-size: 12px;
+       z-index: 10000;
+       opacity: 0;
+       transition: opacity 0.3s ease;
+     `;
 
     document.body.appendChild(notification);
 
@@ -293,6 +337,46 @@ class PopupManager {
         }
       }, 300);
     }, 2000);
+  }
+
+  private async updateSiteSettings(): Promise<void> {
+    try {
+      const domain = this.elements.currentSiteUrl.value.trim();
+      if (!domain) return;
+
+      // Récupérer les paramètres actuels
+      const result = (await chrome.storage.sync.get(["siteSettings"])) as {
+        siteSettings?: { [domain: string]: SiteSettings };
+      };
+      const siteSettings = result.siteSettings || {};
+
+      // Mettre à jour les paramètres pour ce site
+      siteSettings[domain] ??= {};
+      siteSettings[domain].highlightAllWords =
+        this.elements.highlightAllWords.checked;
+
+      // Sauvegarder
+      await chrome.storage.sync.set({ siteSettings });
+
+      // Recharger l'onglet actuel pour appliquer les changements
+      const tabs = await chrome.tabs.query({
+        active: true,
+        currentWindow: true,
+      });
+      const activeTab = tabs[0];
+      if (activeTab?.id) {
+        await chrome.tabs.reload(activeTab.id);
+      }
+
+      this.showNotification(
+        this.elements.highlightAllWords.checked
+          ? "Surlignage automatique activé"
+          : "Surlignage automatique désactivé"
+      );
+    } catch (error) {
+      console.error("Erreur lors de la mise à jour des paramètres:", error);
+      this.showNotification("Erreur lors de la mise à jour");
+    }
   }
 
   private updateVersion(): void {
