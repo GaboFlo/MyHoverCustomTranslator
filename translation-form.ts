@@ -7,7 +7,7 @@ interface TranslationFormElements {
 }
 
 interface TranslationFormCallbacks {
-  onAdd?: (key: string, value: string) => void;
+  onAdd?: (key: string, value: string) => void | Promise<void>;
   onSuccess?: (message: string) => void;
   onError?: (message: string) => void;
 }
@@ -64,7 +64,9 @@ class TranslationForm {
 
   private bindEvents(): void {
     this.elements.addButton.addEventListener("click", () => {
-      this.addTranslation();
+      this.addTranslation().catch((error) => {
+        console.error("Erreur lors de l'ajout de traduction:", error);
+      });
     });
 
     // Permettre l'ajout avec Entrée
@@ -76,17 +78,20 @@ class TranslationForm {
 
     this.elements.valueInput.addEventListener("keypress", (e) => {
       if (e.key === "Enter") {
-        this.addTranslation();
+        this.addTranslation().catch((error) => {
+          console.error("Erreur lors de l'ajout de traduction:", error);
+        });
       }
     });
   }
 
-  private addTranslation(): void {
+  private async addTranslation(): Promise<void> {
     const key = this.elements.keyInput.value.trim();
     const value = this.elements.valueInput.value.trim();
 
     if (!key || !value) {
       const message = "Veuillez remplir les deux champs";
+
       this.callbacks.onError?.(message);
       return;
     }
@@ -94,10 +99,10 @@ class TranslationForm {
     try {
       // Appeler le callback personnalisé si fourni
       if (this.callbacks.onAdd) {
-        this.callbacks.onAdd(key, value);
+        await this.callbacks.onAdd(key, value);
       } else {
         // Comportement par défaut : ajouter au storage
-        this.addToStorage(key, value);
+        await this.addToStorage(key, value);
       }
 
       // Vider les champs
@@ -106,8 +111,10 @@ class TranslationForm {
       this.elements.keyInput.focus();
 
       const message = `Traduction "${key}" ajoutée avec succès, rechargez la page pour voir les changements`;
+
       this.callbacks.onSuccess?.(message);
-    } catch {
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la traduction:", error);
       const message = "Erreur lors de l'ajout de la traduction";
       this.callbacks.onError?.(message);
     }
@@ -184,4 +191,11 @@ class TranslationForm {
 }
 
 // Exporter pour utilisation globale
-(window as unknown as Record<string, unknown>)["TranslationForm"] = TranslationForm;
+(window as unknown as Record<string, unknown>)["TranslationForm"] =
+  TranslationForm;
+
+// S'assurer que l'export est disponible immédiatement
+if (typeof window !== "undefined") {
+  (window as unknown as Record<string, unknown>)["TranslationForm"] =
+    TranslationForm;
+}

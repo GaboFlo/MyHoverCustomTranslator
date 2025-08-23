@@ -630,10 +630,14 @@ class OptionsManager {
       if (typeof TranslationFormClass === "function") {
         this.translationForm = new (TranslationFormClass as new (
           containerId: string,
-          callbacks: unknown
+          callbacks: {
+            onAdd?: (key: string, value: string) => void | Promise<void>;
+            onSuccess?: (message: string) => void;
+            onError?: (message: string) => void;
+          }
         ) => unknown)("translationFormContainer", {
-          onAdd: (key: string, value: string): void => {
-            this.handleTranslationAdd(key, value);
+          onAdd: async (key: string, value: string): Promise<void> => {
+            await this.handleTranslationAdd(key, value);
           },
           onSuccess: (message: string): void => {
             this.showSnackbar(message, "success");
@@ -651,7 +655,10 @@ class OptionsManager {
     }
   }
 
-  private handleTranslationAdd(key: string, value: string): void {
+  private async handleTranslationAdd(
+    key: string,
+    value: string
+  ): Promise<void> {
     try {
       // Récupérer le JSON actuel
       const currentJson = this.elements.translationsJson.value.trim();
@@ -673,7 +680,11 @@ class OptionsManager {
 
       // Vérifier les changements
       this.checkForChanges();
-    } catch {
+
+      // IMPORTANT : Sauvegarder automatiquement (comme dans la popup)
+      await this.saveOptionsSettings();
+    } catch (error) {
+      console.error("Erreur lors de l'ajout de la traduction:", error);
       this.showSnackbar("Erreur lors de l'ajout de la traduction", "error");
     }
   }
