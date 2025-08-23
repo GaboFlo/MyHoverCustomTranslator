@@ -77,4 +77,4 @@ jobs:
         with:
           name: chrome-store-zip-${{ steps.version.outputs.version }}
           path: myhover-translator-${{ steps.version.outputs.version }}.zip
-          retention-days: 90
+          retention-days: 10

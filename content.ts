@@ -126,23 +126,36 @@ class HoverTranslator {
     }
 
     const target = event.target as Element;
+
+    // Ignorer les événements sur les éléments surlignés par l'extension
+    if (target.hasAttribute("data-hover-translator-highlight")) {
+      return;
+    }
+
     const text = this.getTextFromElement(target);
 
     if (!text || text.length < 2) {
       return;
     }
 
-    const translation = this.findTranslation(text);
+    const translationResult = this.findTranslation(text);
 
-    if (translation) {
+    if (translationResult) {
       // Retirer l'ancienne bordure et ajouter la nouvelle
       this.removeTranslationBorder();
-      this.addTranslationBorder(target);
-      this.showTooltip(translation, event);
+      this.addTranslationBorder(target, text, translationResult.matchedKey);
+      this.showTooltip(translationResult.translation, event);
     }
   }
 
-  private handleMouseOut(): void {
+  private handleMouseOut(event: MouseEvent): void {
+    const target = event.target as Element;
+
+    // Ignorer les événements sur les éléments surlignés par l'extension
+    if (target.hasAttribute("data-hover-translator-highlight")) {
+      return;
+    }
+
     this.hideTooltip();
     this.removeTranslationBorder();
   }
@@ -168,13 +181,15 @@ class HoverTranslator {
     return null;
   }
 
-  private findTranslation(text: string): string | null {
+  private findTranslation(
+    text: string
+  ): { translation: string; matchedKey: string } | null {
     const normalizedText = text.toLowerCase().trim();
 
     const findInObject = (
       obj: ContentTranslationData,
       searchText: string
-    ): string | null => {
+    ): { translation: string; matchedKey: string } | null => {
       let partialMatch: {
         key: string;
         value: string | ContentTranslationData;
@@ -185,7 +200,11 @@ class HoverTranslator {
 
         // Correspondance exacte (priorité)
         if (normalizedKey === searchText) {
-          return typeof value === "string" ? value : JSON.stringify(value);
+          return {
+            translation:
+              typeof value === "string" ? value : JSON.stringify(value),
+            matchedKey: key,
+          };
         }
 
         // Correspondance partielle (le texte survolé contient la clé)
@@ -208,9 +227,13 @@ class HoverTranslator {
 
       // Si aucune correspondance exacte, retourner la meilleure correspondance partielle
       if (partialMatch) {
-        return typeof partialMatch.value === "string"
-          ? partialMatch.value
-          : JSON.stringify(partialMatch.value);
+        return {
+          translation:
+            typeof partialMatch.value === "string"
+              ? partialMatch.value
+              : JSON.stringify(partialMatch.value),
+          matchedKey: partialMatch.key,
+        };
       }
 
       return null;
@@ -290,15 +313,52 @@ class HoverTranslator {
     this.tooltip.style.top = `${y}px`;
   }
 
-  private addTranslationBorder(element: Element): void {
+  private addTranslationBorder(
+    element: Element,
+    fullText: string,
+    matchedKey: string
+  ): void {
     if (element.nodeType === Node.ELEMENT_NODE) {
       const el = element as HTMLElement;
       this.currentHoveredElement = el;
+
+      // Garder le soulignement général
       el.style.outline = "2px solid #667eea";
       el.style.outlineOffset = "1px";
       el.style.borderRadius = "2px";
       el.setAttribute("data-hover-translator-border", "true");
+
+      // Ajouter le surlignage spécifique du texte correspondant
+      this.highlightMatchedText(el, fullText, matchedKey);
     }
+  }
+
+  private highlightMatchedText(
+    element: HTMLElement,
+    fullText: string,
+    matchedKey: string
+  ): void {
+    // Sauvegarder le contenu original
+    const originalContent = element.innerHTML;
+
+    // Créer une expression régulière pour trouver le texte correspondant (insensible à la casse)
+    const regex = new RegExp(`(${this.escapeRegExp(matchedKey)})`, "gi");
+
+    // Remplacer le texte correspondant par un span surligné avec un attribut spécial
+    const highlightedContent = fullText.replace(
+      regex,
+      '<span data-hover-translator-highlight="true" style="background-color: #ffeb3b; color: #000; padding: 1px 2px; border-radius: 2px; font-weight: bold;">$1</span>'
+    );
+
+    // Mettre à jour le contenu de l'élément
+    element.innerHTML = highlightedContent;
+
+    // Sauvegarder le contenu original pour pouvoir le restaurer
+    element.setAttribute("data-original-content", originalContent);
+  }
+
+  private escapeRegExp(string: string): string {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   }
 
   private removeTranslationBorder(): void {
@@ -310,6 +370,16 @@ class HoverTranslator {
       this.currentHoveredElement.removeAttribute(
         "data-hover-translator-border"
       );
+
+      // Restaurer le contenu original
+      const originalContent = this.currentHoveredElement.getAttribute(
+        "data-original-content"
+      );
+      if (originalContent) {
+        this.currentHoveredElement.innerHTML = originalContent;
+        this.currentHoveredElement.removeAttribute("data-original-content");
+      }
+
       this.currentHoveredElement = null;
     }
 
@@ -323,6 +393,13 @@ class HoverTranslator {
       el.style.outlineOffset = "";
       el.style.borderRadius = "";
       el.removeAttribute("data-hover-translator-border");
+
+      // Restaurer le contenu original
+      const originalContent = el.getAttribute("data-original-content");
+      if (originalContent) {
+        el.innerHTML = originalContent;
+        el.removeAttribute("data-original-content");
+      }
     });
   }
 }
