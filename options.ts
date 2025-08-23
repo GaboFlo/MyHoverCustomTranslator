@@ -197,6 +197,7 @@ class OptionsManager {
           }
         }
       } else {
+        // Fallback : essayer de charger depuis l'ancienne clé 'translations'
         translations = result.translations || {};
       }
 
@@ -396,6 +397,9 @@ class OptionsManager {
 
       let OptionsSettings: OptionsSettings;
 
+      // Toujours nettoyer les anciennes données avant de sauvegarder
+      await this.cleanupOldTranslationParts();
+
       if (translationsSize > maxSize) {
         // Diviser le dictionnaire en parties
         const translationParts = this.splitTranslations(translations, maxSize);
@@ -422,9 +426,6 @@ class OptionsManager {
 
         this.showSnackbar(`Sauvegardé avec succès`, "success");
       } else {
-        // Nettoyer les anciennes parties si elles existent
-        await this.cleanupOldTranslationParts();
-
         OptionsSettings = {
           translations,
           targetUrls,
@@ -488,6 +489,7 @@ class OptionsManager {
 
   private async cleanupOldTranslationParts(): Promise<void> {
     // Simplification : on ne nettoie pas automatiquement pour éviter les erreurs d'API
+    // Les nouvelles données écraseront les anciennes
   }
 
   private async resetOptionsSettings(): Promise<void> {
