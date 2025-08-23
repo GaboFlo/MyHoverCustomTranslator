@@ -60,6 +60,8 @@ npm run build:firefox
 
 **⚠️ Note Firefox :** L'extension est temporaire et disparaîtra au redémarrage de Firefox. Pour une installation permanente, utilisez le fichier `.xpi` (voir section Production).
 
+**🔧 Important pour Firefox :** L'extension inclut un ID explicite (`myhover-translator@gaboflo.fr`) dans le manifest pour permettre le fonctionnement de l'API de stockage.
+
 ### Différences entre navigateurs
 
 | Fonctionnalité | Chrome/Edge | Firefox |
@@ -118,6 +120,12 @@ MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
 1. Vérifier que l'extension est bien chargée dans `about:debugging`
 2. Redémarrer Firefox après l'installation
 3. Vérifier les permissions dans `about:addons`
+4. Vérifier que l'ID d'extension est présent dans le manifest (déjà inclus)
+
+**Erreur "storage API will not work with a temporary addon ID" :**
+- L'extension inclut déjà un ID explicite dans le manifest
+- Recharger l'extension dans `about:debugging`
+- Redémarrer Firefox si nécessaire
 
 **L'extension disparaît au redémarrage :**
 - C'est normal pour les extensions temporaires. Utilisez le fichier `.xpi` pour une installation permanente.
