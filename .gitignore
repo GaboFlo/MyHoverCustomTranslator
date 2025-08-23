@@ -42,4 +42,3 @@ dist/
 
 # Dépendances Node.js
 node_modules/
-package-lock.json
