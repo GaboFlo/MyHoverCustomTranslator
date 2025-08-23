@@ -308,21 +308,21 @@ class PopupManager {
 
   private initTranslationForm(): void {
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const TranslationFormClass = (window as any).TranslationForm;
+      const TranslationFormClass = (
+        window as unknown as Record<string, unknown>
+      )["TranslationForm"];
       if (typeof TranslationFormClass === "function") {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        this.translationForm = new TranslationFormClass(
-          "translationFormContainer",
-          {
-            onSuccess: (message: string) => {
-              this.showNotification(message);
-            },
-            onError: (message: string) => {
-              this.showNotification(message);
-            },
-          }
-        );
+        this.translationForm = new (TranslationFormClass as new (
+          containerId: string,
+          callbacks: unknown
+        ) => unknown)("translationFormContainer", {
+          onSuccess: (message: string) => {
+            this.showNotification(message);
+          },
+          onError: (message: string) => {
+            this.showNotification(message);
+          },
+        });
       }
     } catch (error) {
       console.error(

@@ -107,7 +107,7 @@ class TranslationForm {
 
       const message = `Traduction "${key}" ajoutée avec succès, rechargez la page pour voir les changements`;
       this.callbacks.onSuccess?.(message);
-    } catch (error) {
+    } catch {
       const message = "Erreur lors de l'ajout de la traduction";
       this.callbacks.onError?.(message);
     }
@@ -184,5 +184,4 @@ class TranslationForm {
 }
 
 // Exporter pour utilisation globale
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(window as any).TranslationForm = TranslationForm;
+(window as unknown as Record<string, unknown>)["TranslationForm"] = TranslationForm;

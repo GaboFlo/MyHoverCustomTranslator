@@ -19,6 +19,9 @@ class HoverTranslator {
   private tooltip: HTMLDivElement | null = null;
   private currentTimeout: number | null = null;
   private currentHoveredElement: HTMLElement | null = null;
+  private searchOverlay: HTMLDivElement | null = null;
+  private searchInput: HTMLInputElement | null = null;
+  private searchResults: HTMLElement[] = [];
 
   constructor() {
     this.init();
@@ -102,6 +105,7 @@ class HoverTranslator {
     document.addEventListener("mouseover", this.handleMouseOver.bind(this));
     document.addEventListener("mouseout", this.handleMouseOut.bind(this));
     document.addEventListener("mousemove", this.handleMouseMove.bind(this));
+    document.addEventListener("keydown", this.handleKeyDown.bind(this));
   }
 
   private observePageChanges(): void {
@@ -170,6 +174,19 @@ class HoverTranslator {
     }
   }
 
+  private handleKeyDown(event: KeyboardEvent): void {
+    // Intercepter Ctrl+Shift+F pour notre recherche personnalisée
+    if (event.ctrlKey && event.shiftKey && event.key === "F") {
+      if (!this.shouldTranslateOnPage()) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      this.showSearchOverlay();
+    }
+  }
+
   private getTextFromElement(element: Element): string | null {
     if (element.nodeType === Node.TEXT_NODE) {
       return element.textContent?.trim() || null;
@@ -185,14 +202,18 @@ class HoverTranslator {
     return null;
   }
 
-  private findAllTranslations(
-    text: string
-  ): Array<{ translation: string; matchedKey: string; isReverse: boolean }> {
+  private findAllTranslations(text: string): Array<{
+    translation: string;
+    matchedKey: string;
+    isReverse: boolean;
+    position: number;
+  }> {
     const normalizedText = text.toLowerCase().trim().replace(/\s+/g, " ");
     const allMatches: Array<{
       translation: string;
       matchedKey: string;
       isReverse: boolean;
+      position: number;
     }> = [];
 
     const findInObject = (
@@ -204,11 +225,13 @@ class HoverTranslator {
 
         // Correspondance exacte clé -> valeur
         if (normalizedKey === searchText) {
+          const position = searchText.indexOf(normalizedKey);
           allMatches.push({
             translation:
               typeof value === "string" ? value : JSON.stringify(value),
             matchedKey: key,
             isReverse: false,
+            position: position >= 0 ? position : 0,
           });
         }
 
@@ -219,21 +242,25 @@ class HoverTranslator {
             .trim()
             .replace(/\s+/g, " ");
           if (normalizedValue === searchText) {
+            const position = searchText.indexOf(normalizedValue);
             allMatches.push({
               translation: key,
               matchedKey: value,
               isReverse: true,
+              position: position >= 0 ? position : 0,
             });
           }
         }
 
         // Correspondance partielle clé -> valeur (le texte survolé contient la clé)
         if (searchText.includes(normalizedKey) && normalizedKey.length > 2) {
+          const position = searchText.indexOf(normalizedKey);
           allMatches.push({
             translation:
               typeof value === "string" ? value : JSON.stringify(value),
             matchedKey: key,
             isReverse: false,
+            position: position >= 0 ? position : 0,
           });
         }
 
@@ -247,10 +274,12 @@ class HoverTranslator {
             searchText.includes(normalizedValue) &&
             normalizedValue.length > 2
           ) {
+            const position = searchText.indexOf(normalizedValue);
             allMatches.push({
               translation: key,
               matchedKey: value,
               isReverse: true,
+              position: position >= 0 ? position : 0,
             });
           }
         }
@@ -263,8 +292,8 @@ class HoverTranslator {
 
     findInObject(this.translations, normalizedText);
 
-    // Trier par longueur de clé correspondante (les plus longues en premier)
-    return allMatches.sort((a, b) => b.matchedKey.length - a.matchedKey.length);
+    // Trier par position d'apparition dans le texte (ordre naturel)
+    return allMatches.sort((a, b) => a.position - b.position);
   }
 
   private shouldTranslateOnPage(): boolean {
@@ -345,6 +374,7 @@ class HoverTranslator {
       translation: string;
       matchedKey: string;
       isReverse: boolean;
+      position: number;
     }>
   ): void {
     if (element.nodeType === Node.ELEMENT_NODE) {
@@ -367,6 +397,7 @@ class HoverTranslator {
       translation: string;
       matchedKey: string;
       isReverse: boolean;
+      position: number;
     }>
   ): string {
     if (allTranslations.length === 1 && allTranslations[0]) {
@@ -402,6 +433,7 @@ class HoverTranslator {
       translation: string;
       matchedKey: string;
       isReverse: boolean;
+      position: number;
     }>
   ): void {
     // Sauvegarder le contenu original
@@ -424,13 +456,14 @@ class HoverTranslator {
         key: translation.matchedKey,
         isReverse: translation.isReverse,
         color: color,
+        position: translation.position,
       };
     });
 
-    // Trier par longueur décroissante pour éviter les conflits de remplacement
-    matchesToHighlight.sort((a, b) => b.key.length - a.key.length);
+    // Trier par position d'apparition dans le texte (ordre naturel)
+    matchesToHighlight.sort((a, b) => a.position - b.position);
 
-    // Appliquer les surlignages
+    // Appliquer les surlignages dans l'ordre d'apparition
     matchesToHighlight.forEach((match, index) => {
       if (match.color) {
         const regex = new RegExp(`(${this.escapeRegExp(match.key)})`, "gi");
@@ -458,6 +491,314 @@ class HoverTranslator {
 
   private escapeRegExp(string: string): string {
     return string.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  }
+
+  private showSearchOverlay(): void {
+    // Créer l'overlay s'il n'existe pas
+    if (!this.searchOverlay) {
+      this.createSearchOverlay();
+    }
+
+    if (this.searchOverlay && this.searchInput) {
+      this.searchOverlay.style.display = "block";
+      this.searchInput.focus();
+      this.searchInput.select();
+    }
+  }
+
+  private createSearchOverlay(): void {
+    this.searchOverlay = document.createElement("div");
+    this.searchOverlay.id = "hover-translator-search-overlay";
+    this.searchOverlay.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 10001;
+      display: none;
+      pointer-events: auto;
+    `;
+
+    const searchBox = document.createElement("div");
+    searchBox.style.cssText = `
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(10px);
+      border-radius: 8px;
+      padding: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      min-width: 250px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    `;
+
+    // Input de recherche
+    this.searchInput = document.createElement("input");
+    this.searchInput.type = "text";
+    this.searchInput.placeholder = "Rechercher...";
+    this.searchInput.style.cssText = `
+      flex: 1;
+      padding: 6px 10px;
+      border: 1px solid rgba(0, 0, 0, 0.2);
+      border-radius: 4px;
+      font-size: 13px;
+      outline: none;
+      background: rgba(255, 255, 255, 0.9);
+      color: #333;
+    `;
+
+    // Info résultats
+    const resultsInfo = document.createElement("div");
+    resultsInfo.id = "search-results-info";
+    resultsInfo.style.cssText = `
+      font-size: 11px;
+      color: #666;
+      min-width: 50px;
+      text-align: center;
+    `;
+
+    // Bouton fermer
+    const closeButton = document.createElement("button");
+    closeButton.innerHTML = "❌";
+    closeButton.style.cssText = `
+      background: none;
+      border: none;
+      font-size: 12px;
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    `;
+    closeButton.title = "Fermer la recherche";
+    closeButton.addEventListener("click", () => this.hideSearchOverlay());
+    closeButton.addEventListener(
+      "mouseenter",
+      () => (closeButton.style.opacity = "1")
+    );
+    closeButton.addEventListener(
+      "mouseleave",
+      () => (closeButton.style.opacity = "0.7")
+    );
+
+    searchBox.appendChild(this.searchInput);
+    searchBox.appendChild(resultsInfo);
+    searchBox.appendChild(closeButton);
+    this.searchOverlay.appendChild(searchBox);
+    document.body.appendChild(this.searchOverlay);
+
+    // Événements
+    this.searchInput.addEventListener(
+      "input",
+      this.handleSearchInput.bind(this)
+    );
+  }
+
+  private handleSearchInput(): void {
+    if (!this.searchInput) return;
+
+    const query = this.searchInput.value.trim();
+    this.clearSearchResults();
+
+    if (query.length < 2) {
+      this.updateSearchResultsInfo("Tapez au moins 2 caractères");
+      return;
+    }
+
+    this.performSearch(query);
+  }
+
+  private performSearch(query: string): void {
+    const matches = this.findAllTranslationsInPage(query);
+
+    if (matches.length === 0) {
+      this.updateSearchResultsInfo("Aucun résultat trouvé");
+      return;
+    }
+
+    this.highlightSearchResults(matches);
+
+    // Faire défiler vers le premier résultat
+    if (this.searchResults.length > 0) {
+      const firstElement = this.searchResults[0];
+      if (firstElement) {
+        const firstResult = firstElement.querySelector(
+          ".hover-translator-search-result"
+        );
+        if (firstResult) {
+          firstResult.scrollIntoView({
+            behavior: "smooth",
+            block: "center",
+          });
+        }
+      }
+    }
+
+    this.updateSearchResultsInfo(`${matches.length} résultat(s) trouvé(s)`);
+  }
+
+  private findAllTranslationsInPage(query: string): Array<{
+    element: HTMLElement;
+    text: string;
+    translation: string;
+    isReverse: boolean;
+  }> {
+    const matches: Array<{
+      element: HTMLElement;
+      text: string;
+      translation: string;
+      isReverse: boolean;
+    }> = [];
+    const normalizedQuery = query.toLowerCase().trim();
+
+    // Parcourir tous les éléments de texte de la page
+    const walker = document.createTreeWalker(
+      document.body,
+      NodeFilter.SHOW_TEXT,
+      {
+        acceptNode: (node) => {
+          const parent = node.parentElement;
+          if (
+            !parent ||
+            parent.closest(
+              "#hover-translator-search-overlay, #hover-translator-tooltip"
+            )
+          ) {
+            return NodeFilter.FILTER_REJECT;
+          }
+          return NodeFilter.FILTER_ACCEPT;
+        },
+      }
+    );
+
+    const textNodes: Text[] = [];
+    let node = walker.nextNode();
+    while (node) {
+      textNodes.push(node as Text);
+      node = walker.nextNode();
+    }
+
+    textNodes.forEach((textNode) => {
+      const text = textNode.textContent?.trim();
+      if (!text || text.length < 2) return;
+
+      const parentElement = textNode.parentElement;
+      if (!parentElement) return;
+
+      // Chercher des correspondances dans ce texte
+      const allTranslations = this.findAllTranslations(text);
+
+      allTranslations.forEach((translation) => {
+        const keyLower = translation.matchedKey.toLowerCase();
+        const translationLower = translation.translation.toLowerCase();
+
+        // Vérifier si la requête correspond à la clé ou à la traduction
+        if (
+          keyLower.includes(normalizedQuery) ||
+          translationLower.includes(normalizedQuery)
+        ) {
+          matches.push({
+            element: parentElement,
+            text: text,
+            translation: translation.translation,
+            isReverse: translation.isReverse,
+          });
+        }
+      });
+    });
+
+    return matches;
+  }
+
+  private highlightSearchResults(
+    matches: Array<{
+      element: HTMLElement;
+      text: string;
+      translation: string;
+      isReverse: boolean;
+    }>
+  ): void {
+    this.searchResults = [];
+
+    matches.forEach((match, index) => {
+      const element = match.element;
+
+      // Sauvegarder le contenu original
+      const originalHTML = element.innerHTML;
+      element.setAttribute("data-original-search-content", originalHTML);
+
+      // Créer le surlignage avec la couleur du dictionnaire
+      const highlightColor = match.isReverse ? "#ff9800" : "#4caf50"; // Orange pour les réciproques, Vert pour les normales
+      const highlightText = match.isReverse ? "⏪ " : "";
+
+      // Entourer le texte trouvé
+      const newHTML = originalHTML.replace(
+        new RegExp(`(${this.escapeRegExp(match.text)})`, "gi"),
+        `<span class="hover-translator-search-result" data-search-index="${index}" style="background-color: ${highlightColor}; color: white; padding: 2px 4px; border-radius: 3px; font-weight: bold; border: 2px solid #333;" title="${highlightText}${match.translation}">$1</span>`
+      );
+
+      element.innerHTML = newHTML;
+
+      // Ajouter l'élément à la liste des résultats
+      this.searchResults.push(element);
+
+      // Si c'est le premier résultat, le marquer comme actif
+      if (index === 0) {
+        const firstResult = element.querySelector(
+          ".hover-translator-search-result"
+        );
+        if (firstResult) {
+          firstResult.classList.add("active");
+          (firstResult as HTMLElement).style.borderColor = "#f44336";
+        }
+      }
+    });
+  }
+
+  private clearSearchResults(): void {
+    // Restaurer le contenu original de tous les éléments modifiés
+    document
+      .querySelectorAll("[data-original-search-content]")
+      .forEach((element) => {
+        const original = element.getAttribute("data-original-search-content");
+        if (original) {
+          element.innerHTML = original;
+          element.removeAttribute("data-original-search-content");
+        }
+      });
+
+    this.searchResults = [];
+  }
+
+  private updateSearchResultsInfo(message: string): void {
+    const info = document.getElementById("search-results-info");
+    if (info) {
+      // Format plus compact : "2/5" au lieu de "2 / 5 résultat(s)"
+      if (message.includes("/")) {
+        const match = message.match(/(\d+) \/ (\d+)/);
+        if (match) {
+          info.textContent = `${match[1]}/${match[2]}`;
+          return;
+        }
+      }
+      // Pour les autres messages, garder le texte mais plus court
+      info.textContent = message
+        .replace("résultat(s) trouvé(s)", "")
+        .replace("Tapez au moins 2 caractères", "2+ car")
+        .replace("Aucun résultat trouvé", "0");
+    }
+  }
+
+  private hideSearchOverlay(): void {
+    if (this.searchOverlay) {
+      this.searchOverlay.style.display = "none";
+      this.clearSearchResults();
+      this.removeTranslationBorder();
+
+      if (this.searchInput) {
+        this.searchInput.value = "";
+      }
+    }
   }
 
   private removeTranslationBorder(): void {
