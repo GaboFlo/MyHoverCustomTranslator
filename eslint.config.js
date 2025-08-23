@@ -1,52 +1,52 @@
-import js from '@eslint/js';
-import typescript from '@typescript-eslint/eslint-plugin';
-import typescriptParser from '@typescript-eslint/parser';
+import js from "@eslint/js";
+import typescript from "@typescript-eslint/eslint-plugin";
+import typescriptParser from "@typescript-eslint/parser";
 
 export default [
   js.configs.recommended,
   {
-    files: ['**/*.ts'],
+    files: ["**/*.ts", "**/*.js"],
     languageOptions: {
       parser: typescriptParser,
       parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
+        ecmaVersion: "latest",
+        sourceType: "module",
       },
       globals: {
-        browser: 'readonly',
-        chrome: 'readonly',
-        window: 'readonly',
-        document: 'readonly',
-        console: 'readonly',
-        setTimeout: 'readonly',
-        URL: 'readonly',
-        Blob: 'readonly',
-        File: 'readonly',
-        FileReader: 'readonly',
-        confirm: 'readonly',
-        Event: 'readonly',
-        HTMLElement: 'readonly',
-        HTMLButtonElement: 'readonly',
-        HTMLInputElement: 'readonly',
-        HTMLTextAreaElement: 'readonly',
-        HTMLDivElement: 'readonly',
-        HTMLSpanElement: 'readonly',
+        browser: "readonly",
+        chrome: "readonly",
+        window: "readonly",
+        document: "readonly",
+        console: "readonly",
+        setTimeout: "readonly",
+        URL: "readonly",
+        Blob: "readonly",
+        File: "readonly",
+        FileReader: "readonly",
+        confirm: "readonly",
+        Event: "readonly",
+        HTMLElement: "readonly",
+        HTMLButtonElement: "readonly",
+        HTMLInputElement: "readonly",
+        HTMLTextAreaElement: "readonly",
+        HTMLDivElement: "readonly",
+        HTMLSpanElement: "readonly",
       },
     },
     plugins: {
-      '@typescript-eslint': typescript,
+      "@typescript-eslint": typescript,
     },
     rules: {
       ...typescript.configs.recommended.rules,
-      '@typescript-eslint/no-unused-vars': 'error',
-      '@typescript-eslint/no-explicit-any': 'error',
-      '@typescript-eslint/explicit-function-return-type': 'warn',
-      '@typescript-eslint/no-non-null-assertion': 'warn',
-      'prefer-const': 'error',
-      'no-var': 'error',
+      "@typescript-eslint/no-unused-vars": "error",
+      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/explicit-function-return-type": "warn",
+      "@typescript-eslint/no-non-null-assertion": "warn",
+      "prefer-const": "error",
+      "no-var": "error",
     },
   },
   {
-    ignores: ['dist/**', 'node_modules/**'],
+    ignores: ["dist/**", "node_modules/**"],
   },
 ];
