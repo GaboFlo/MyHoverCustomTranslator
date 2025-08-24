@@ -1,11 +1,11 @@
 {
   "env": {
     "browser": true,
-    "es2021": true,
+    "es2020": true,
     "webextensions": true
   },
   "extends": [
-    "@typescript-eslint/recommended"
+    "eslint:recommended"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -16,21 +16,11 @@
     "@typescript-eslint"
   ],
   "rules": {
-    "@typescript-eslint/no-explicit-any": "warn",
-    "@typescript-eslint/no-unused-vars": "warn",
-    "no-console": "off",
-    "no-unsanitized/method": "off",
-    "no-unsanitized/property": "off"
-  },
-  "overrides": [
-    {
-      "files": [
-        "dist/**/*.js"
-      ],
-      "rules": {
-        "no-unsanitized/method": "off",
-        "no-unsanitized/property": "off"
-      }
-    }
-  ]
+    "@typescript-eslint/no-unused-vars": "error",
+    "@typescript-eslint/no-explicit-any": "error",
+    "@typescript-eslint/explicit-function-return-type": "warn",
+    "@typescript-eslint/no-non-null-assertion": "warn",
+    "prefer-const": "error",
+    "no-var": "error"
+  }
 }

@@ -1,6 +1,4 @@
 /* eslint-disable no-undef */
-import { updateElementContent } from "./utils";
-
 // Types utilisés
 interface ContentTranslationData {
   [key: string]: string | ContentTranslationData;
@@ -512,7 +510,7 @@ class HoverTranslator {
     });
 
     // Mettre à jour le contenu de l'élément
-    updateElementContent(element, highlightedContent);
+    element.innerHTML = highlightedContent;
 
     // Sauvegarder le contenu original pour pouvoir le restaurer
     element.setAttribute("data-original-content", originalContent);
@@ -588,7 +586,7 @@ class HoverTranslator {
 
     // Bouton fermer
     const closeButton = document.createElement("button");
-    closeButton.textContent = "❌";
+    closeButton.innerHTML = "❌";
     closeButton.style.cssText = `
       background: none;
       border: none;
@@ -766,7 +764,7 @@ class HoverTranslator {
         `<span class="hover-translator-search-result" data-search-index="${index}" style="background-color: ${highlightColor}; color: white; padding: 2px 4px; border-radius: 3px; font-weight: bold; border: 2px solid #333;" title="${highlightText}${match.translation}">$1</span>`
       );
 
-      updateElementContent(element, newHTML);
+      element.innerHTML = newHTML;
 
       // Ajouter l'élément à la liste des résultats
       this.searchResults.push(element);
@@ -791,7 +789,7 @@ class HoverTranslator {
       .forEach((element) => {
         const original = element.getAttribute("data-original-search-content");
         if (original) {
-          updateElementContent(element as HTMLElement, original);
+          element.innerHTML = original;
           element.removeAttribute("data-original-search-content");
         }
       });
@@ -846,7 +844,7 @@ class HoverTranslator {
           "data-original-content"
         );
         if (originalContent) {
-          updateElementContent(this.currentHoveredElement, originalContent);
+          this.currentHoveredElement.innerHTML = originalContent;
           this.currentHoveredElement.removeAttribute("data-original-content");
         }
       }
@@ -868,7 +866,7 @@ class HoverTranslator {
       // Restaurer le contenu original
       const originalContent = el.getAttribute("data-original-content");
       if (originalContent) {
-        updateElementContent(el, originalContent);
+        el.innerHTML = originalContent;
         el.removeAttribute("data-original-content");
       }
     });
@@ -1023,7 +1021,7 @@ class HoverTranslator {
     });
 
     // Mettre à jour le contenu de l'élément
-    updateElementContent(element, highlightedContent);
+    element.innerHTML = highlightedContent;
 
     // Ajouter l'élément à la liste des éléments surlignés
     this.highlightedElements.push(element);
