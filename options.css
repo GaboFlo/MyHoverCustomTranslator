@@ -148,6 +148,12 @@ textarea:focus {
   justify-content: center;
 }
 
+.url-buttons .btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .url-input {
   flex: 1;
   padding: 12px 15px;
@@ -260,6 +266,27 @@ textarea:focus {
   flex-wrap: wrap;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  color: #6c757d;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.github-link:hover {
+  color: #333;
+  background-color: #e9ecef;
+  transform: scale(1.1);
+}
+
+.github-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .btn {

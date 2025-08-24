@@ -82,3 +82,129 @@
     width: 100%;
   }
 }
+
+/* Styles pour l'autocomplétion */
+.translation-autocomplete {
+  margin: 20px 0;
+}
+
+.autocomplete-header {
+  margin-bottom: 15px;
+}
+
+.autocomplete-search {
+  position: relative;
+}
+
+.autocomplete-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+}
+
+.suggestion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  border-bottom: 1px solid #f8f9fa;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover {
+  background-color: #f8f9fa;
+}
+
+.suggestion-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.suggestion-key {
+  font-weight: 600;
+  color: #333;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.suggestion-value {
+  color: #666;
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.suggestion-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 15px;
+  flex-shrink: 0;
+}
+
+.suggestion-actions .btn {
+  padding: 6px 10px;
+  font-size: 12px;
+  min-width: auto;
+}
+
+.suggestion-edit {
+  background: #007bff;
+  color: white;
+}
+
+.suggestion-edit:hover {
+  background: #0056b3;
+}
+
+.suggestion-delete {
+  background: #dc3545;
+  color: white;
+}
+
+.suggestion-delete:hover {
+  background: #c82333;
+}
+
+/* Mise en surbrillance des correspondances */
+mark {
+  background-color: #fff3cd;
+  color: #856404;
+  padding: 1px 2px;
+  border-radius: 2px;
+  font-weight: 600;
+}
+
+/* Responsive pour l'autocomplétion */
+@media (max-width: 768px) {
+  .suggestion-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .suggestion-actions {
+    margin-left: 0;
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .suggestion-actions .btn {
+    flex: 1;
+    max-width: 80px;
+  }
+}

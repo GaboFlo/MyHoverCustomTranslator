@@ -23,6 +23,8 @@ interface PopupElements {
   removeCurrentSite: HTMLButtonElement;
   currentSiteUrl: HTMLInputElement;
   highlightAllWords: HTMLInputElement;
+  infoSection: HTMLDivElement;
+  siteOptionsSection: HTMLDivElement;
 }
 
 class PopupManager {
@@ -58,6 +60,10 @@ class PopupManager {
       highlightAllWords: document.getElementById(
         "highlightAllWords"
       ) as HTMLInputElement,
+      infoSection: document.getElementById("infoSection") as HTMLDivElement,
+      siteOptionsSection: document.getElementById(
+        "siteOptionsSection"
+      ) as HTMLDivElement,
     };
   }
 
@@ -143,12 +149,18 @@ class PopupManager {
         this.elements.siteStatusIndicator.className = "status-indicator";
         this.elements.addCurrentSite.classList.remove("visible");
         this.elements.removeCurrentSite.classList.add("visible");
+        // Afficher le message d'instruction et les options si le site est actif
+        this.elements.infoSection.style.display = "block";
+        this.elements.siteOptionsSection.style.display = "block";
       } else {
         this.elements.siteStatusIndicator.textContent = "Inactif";
         this.elements.siteStatusIndicator.className =
           "status-indicator inactive";
         this.elements.addCurrentSite.classList.add("visible");
         this.elements.removeCurrentSite.classList.remove("visible");
+        // Masquer le message d'instruction et les options si le site est inactif
+        this.elements.infoSection.style.display = "none";
+        this.elements.siteOptionsSection.style.display = "none";
       }
     } catch (error) {
       console.error("Erreur lors de la mise à jour de l'affichage:", error);
