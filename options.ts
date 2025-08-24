@@ -31,6 +31,7 @@ interface OptionsElements {
   exportOptionsSettings: HTMLButtonElement;
   importOptionsSettings: HTMLButtonElement;
   importFile: HTMLInputElement;
+  addNewUrl: HTMLButtonElement;
 }
 
 class OptionsManager {
@@ -39,6 +40,8 @@ class OptionsManager {
   private hasChanges = false;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private translationForm?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private translationAutocomplete?: any;
 
   public getTranslationForm(): unknown {
     return this.translationForm;
@@ -82,6 +85,7 @@ class OptionsManager {
     const importFile = document.getElementById(
       "importFile"
     ) as HTMLInputElement;
+    const addNewUrl = document.getElementById("addNewUrl") as HTMLButtonElement;
 
     this.elements = {
       translationsJson,
@@ -94,6 +98,7 @@ class OptionsManager {
       exportOptionsSettings,
       importOptionsSettings,
       importFile,
+      addNewUrl,
     };
   }
 
@@ -126,6 +131,9 @@ class OptionsManager {
       // Initialiser le composant de traduction factorisé
       this.initTranslationForm();
 
+      // Initialiser le composant d'autocomplétion
+      this.initTranslationAutocomplete();
+
       // Événements de détection des changements
       this.elements.translationsJson.addEventListener("input", () => {
         this.checkForChanges();
@@ -143,7 +151,10 @@ class OptionsManager {
         const target = e.target as HTMLElement;
         if (target.classList.contains("remove-url")) {
           this.removeUrlField(target);
-        } else if (target.classList.contains("add-url")) {
+        } else if (
+          target.classList.contains("add-url") &&
+          !(target as HTMLButtonElement).disabled
+        ) {
           this.addUrlField("", true);
         }
       });
@@ -151,6 +162,11 @@ class OptionsManager {
       // Écouter les changements dans les champs URL
       this.elements.urlList.addEventListener("input", () => {
         this.checkForChanges();
+      });
+
+      // Événement pour ajouter une nouvelle URL
+      this.elements.addNewUrl.addEventListener("click", () => {
+        this.addUrlField("", true);
       });
     } catch (error) {
       console.error("❌ Erreur lors de la liaison des événements:", error);
@@ -214,6 +230,16 @@ class OptionsManager {
 
       // Vérifier les changements et mettre à jour l'état des boutons
       this.checkForChanges();
+
+      // Mettre à jour l'autocomplétion avec les données chargées
+      if (
+        this.translationAutocomplete &&
+        this.translationAutocomplete.updateFromJson
+      ) {
+        this.translationAutocomplete.updateFromJson(
+          this.elements.translationsJson.value
+        );
+      }
     } catch {
       this.showSnackbar("Erreur lors du chargement des paramètres", "error");
     }
@@ -292,16 +318,44 @@ class OptionsManager {
   private addUrlField(value: string = "", checkChanges: boolean = true): void {
     const urlItem = document.createElement("div");
     urlItem.className = "url-item";
+
+    // Le bouton "+" est désactivé si l'URL a une valeur
+
     urlItem.innerHTML = `
       <input type="text" placeholder="exemple.com" class="url-input" value="${value}">
       <div class="url-buttons">
-        <button class="btn btn-secondary add-url" title="Ajouter une URL">➕</button>
         <button class="btn btn-danger remove-url" title="Supprimer cette URL">🗑️</button>
       </div>
     `;
     this.elements.urlList.appendChild(urlItem);
+
+    // Ajouter l'événement de changement pour mettre à jour l'état des boutons
+    const urlInput = urlItem.querySelector(".url-input") as HTMLInputElement;
+    const addButton = urlItem.querySelector(".add-url") as HTMLButtonElement;
+
+    urlInput.addEventListener("input", () => {
+      this.updateUrlButtonState(urlInput, addButton);
+    });
+
     if (checkChanges) {
       this.checkForChanges();
+    }
+  }
+
+  private updateUrlButtonState(
+    urlInput: HTMLInputElement,
+    addButton: HTMLButtonElement
+  ): void {
+    const hasValue = urlInput.value.trim().length > 0;
+
+    if (hasValue) {
+      // Si l'URL a une valeur, désactiver le bouton "+"
+      addButton.disabled = true;
+      addButton.classList.add("disabled");
+    } else {
+      // Si l'URL est vide, activer le bouton "+" pour permettre l'ajout
+      addButton.disabled = false;
+      addButton.classList.remove("disabled");
     }
   }
 
@@ -309,6 +363,18 @@ class OptionsManager {
     const urlItem = button.closest(".url-item") as HTMLElement;
     if (this.elements.urlList.children.length > 1) {
       urlItem.remove();
+
+      // Vérifier s'il reste au moins une URL vide pour permettre l'ajout
+      const remainingUrls =
+        this.elements.urlList.querySelectorAll(".url-input");
+      const hasEmptyUrl = Array.from(remainingUrls).some(
+        (input) => (input as HTMLInputElement).value.trim().length === 0
+      );
+
+      if (!hasEmptyUrl) {
+        this.addUrlField("", false);
+      }
+
       this.checkForChanges();
     }
   }
@@ -655,6 +721,44 @@ class OptionsManager {
     }
   }
 
+  private initTranslationAutocomplete(): void {
+    try {
+      const TranslationAutocompleteClass = (
+        window as unknown as Record<string, unknown>
+      )["TranslationAutocomplete"];
+      if (typeof TranslationAutocompleteClass === "function") {
+        this.translationAutocomplete =
+          new (TranslationAutocompleteClass as new (
+            containerId: string,
+            callbacks: {
+              onEdit?: (key: string, value: string) => void;
+              onDelete?: (key: string) => void;
+              onSuccess?: (message: string) => void;
+              onError?: (message: string) => void;
+            }
+          ) => unknown)("translationAutocompleteContainer", {
+            onEdit: (key: string, value: string): void => {
+              this.handleTranslationEdit(key, value);
+            },
+            onDelete: async (key: string): Promise<void> => {
+              await this.handleTranslationDelete(key);
+            },
+            onSuccess: (message: string): void => {
+              this.showSnackbar(message, "success");
+            },
+            onError: (message: string): void => {
+              this.showSnackbar(message, "error");
+            },
+          });
+      }
+    } catch (error) {
+      console.error(
+        "Erreur lors de l'initialisation de l'autocomplétion:",
+        error
+      );
+    }
+  }
+
   private async handleTranslationAdd(
     key: string,
     value: string
@@ -683,9 +787,85 @@ class OptionsManager {
 
       // IMPORTANT : Sauvegarder automatiquement (comme dans la popup)
       await this.saveOptionsSettings();
+
+      // Mettre à jour l'autocomplétion avec le nouveau JSON
+      if (
+        this.translationAutocomplete &&
+        this.translationAutocomplete.updateFromJson
+      ) {
+        this.translationAutocomplete.updateFromJson(
+          this.elements.translationsJson.value
+        );
+      }
     } catch (error) {
       console.error("Erreur lors de l'ajout de la traduction:", error);
       this.showSnackbar("Erreur lors de l'ajout de la traduction", "error");
+    }
+  }
+
+  private handleTranslationEdit(key: string, value: string): void {
+    try {
+      // Pré-remplir le formulaire d'ajout avec les valeurs à modifier
+      if (this.translationForm) {
+        this.translationForm.setKey(key);
+        this.translationForm.setValue(value);
+        this.translationForm.focus();
+      }
+
+      this.showSnackbar(
+        `Modification de "${key}" - remplissez le formulaire ci-dessus`,
+        "info"
+      );
+    } catch (error) {
+      console.error("Erreur lors de la modification de la traduction:", error);
+      this.showSnackbar(
+        "Erreur lors de la modification de la traduction",
+        "error"
+      );
+    }
+  }
+
+  private async handleTranslationDelete(key: string): Promise<void> {
+    try {
+      // Récupérer le JSON actuel
+      const currentJson = this.elements.translationsJson.value.trim();
+      let translations: OptionsTranslationData = {};
+
+      if (currentJson) {
+        translations = JSON.parse(currentJson);
+      }
+
+      // Supprimer la traduction
+      delete translations[key];
+
+      // Mettre à jour le textarea avec le nouveau JSON
+      this.elements.translationsJson.value = JSON.stringify(
+        translations,
+        null,
+        2
+      );
+
+      // Vérifier les changements
+      this.checkForChanges();
+
+      // Sauvegarder automatiquement
+      await this.saveOptionsSettings();
+
+      // Mettre à jour l'autocomplétion avec le nouveau JSON
+      if (
+        this.translationAutocomplete &&
+        this.translationAutocomplete.updateFromJson
+      ) {
+        this.translationAutocomplete.updateFromJson(
+          this.elements.translationsJson.value
+        );
+      }
+    } catch (error) {
+      console.error("Erreur lors de la suppression de la traduction:", error);
+      this.showSnackbar(
+        "Erreur lors de la suppression de la traduction",
+        "error"
+      );
     }
   }
 

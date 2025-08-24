@@ -7,9 +7,29 @@ Extension de navigateur pour la traduction au survol avec dictionnaire personnal
 
 > **📝 Note importante :** Cette extension utilise l'API WebExtensions standard et est compatible avec Chrome, Firefox, Edge et Safari. Les instructions d'installation varient selon le navigateur.
 
+## Exemples
+
+### Utilisation où le dictionnaire contient la traduction des codes APE
+
 ![Exemple d'utilisation où le dictionnaire contient la traduction des codes APE](assets/hover-example.gif)
 
-## ✨ Fonctionnalités
+### Extension activable site par site directement
+
+<img src="assets/popup-example.png" alt="Extension activable site par site directement" style="max-height: 400px; width: auto;" />
+
+### Configuration dans la page dédiée
+
+![Exemple de configuration dans la page dédiée de l'extension](assets/hover-config-example.gif)
+
+### 📋 Utilisation
+
+1. **Configuration** : Ouvrir les options de l'extension
+2. **Dictionnaire** : Ajouter vos traductions au format JSON, ou une par une via l'ajout manuel
+3. **URLs** : Spécifier les sites cibles (optionnel)
+4. **Activation** : L'extension se lance automatiquement sur les pages configurées
+5. **Surlignage** : Affichage au survol de vos traductions ou de la recherche inversée
+
+## ✨ Fonctionnalités détaillées
 
 - 🎯 **Traduction au survol** : Affichage élégant des traductions avec bordure bleue
 - 📝 **Dictionnaire personnalisable** : Support JSON récursif avec formatage automatique
@@ -34,8 +54,7 @@ npm install
 # Compiler l'extension
 npm run build
 
-# Pour Firefox (optionnel - génère un fichier .xpi)
-npm run build:firefox
+```
 
 ### Installation sur Chrome/Edge
 
@@ -54,6 +73,7 @@ npm run build:firefox
 5. L'extension apparaît dans la barre d'outils
 
 **✅ Vérification de l'installation :**
+
 - L'icône de l'extension doit apparaître dans la barre d'outils
 - Cliquer sur l'icône doit ouvrir la popup avec les options
 - L'extension doit être listée dans `about:addons` (Firefox) ou `chrome://extensions/` (Chrome/Edge)
@@ -62,26 +82,10 @@ npm run build:firefox
 
 **🔧 Important pour Firefox :** L'extension inclut un ID explicite (`myhover-translator@gaboflo.fr`) dans le manifest pour permettre le fonctionnement de l'API de stockage.
 
-### Différences entre navigateurs
-
-| Fonctionnalité | Chrome/Edge | Firefox |
-|---|---|---|
-| Installation temporaire | ✅ Dossier `dist/` | ✅ Fichier `manifest.json` |
-| Installation permanente | ✅ Chrome Web Store | ✅ Fichier `.xpi` |
-| Permissions | ✅ Automatiques | ⚠️ Peut nécessiter validation |
-| Mise à jour | ✅ Automatique | ⚠️ Manuel via `.xpi` |
-
 ### Production
 
 - **Chrome/Edge :** Télécharger la dernière release et l'installer via le Chrome Web Store
 - **Firefox :** Télécharger le fichier `.xpi` et l'installer via Firefox Add-ons
-
-## 📋 Utilisation
-
-1. **Configuration** : Ouvrir les options de l'extension
-2. **Dictionnaire** : Ajouter vos traductions au format JSON, ou une par une via l'ajout manuel
-3. **URLs** : Spécifier les sites cibles (optionnel)
-4. **Activation** : L'extension se lance automatiquement sur les pages configurées
 
 ### 🔎 Recherche globale
 
@@ -117,20 +121,24 @@ MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
 ### Problèmes courants sur Firefox
 
 **L'extension ne fonctionne pas après installation :**
+
 1. Vérifier que l'extension est bien chargée dans `about:debugging`
 2. Redémarrer Firefox après l'installation
 3. Vérifier les permissions dans `about:addons`
 4. Vérifier que l'ID d'extension est présent dans le manifest (déjà inclus)
 
 **Erreur "storage API will not work with a temporary addon ID" :**
+
 - L'extension inclut déjà un ID explicite dans le manifest
 - Recharger l'extension dans `about:debugging`
 - Redémarrer Firefox si nécessaire
 
 **L'extension disparaît au redémarrage :**
+
 - C'est normal pour les extensions temporaires. Utilisez le fichier `.xpi` pour une installation permanente.
 
 **Les traductions ne s'affichent pas :**
+
 1. Vérifier que l'extension est activée dans les options
 2. Vérifier que les URLs cibles sont correctement configurées
 3. Ouvrir la console développeur (F12) pour voir les erreurs éventuelles
@@ -138,6 +146,7 @@ MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
 ### Problèmes courants sur Chrome/Edge
 
 **L'extension ne se charge pas :**
+
 1. Vérifier que le mode développeur est activé
 2. Recharger l'extension dans `chrome://extensions/`
 3. Vérifier que tous les fichiers sont présents dans le dossier `dist/`
@@ -152,4 +161,3 @@ MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ⭐ **N'oubliez pas de donner une étoile si ce projet vous aide !**
 Projet développé avec l'aide de Cursor
-```

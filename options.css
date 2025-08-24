@@ -87,6 +87,7 @@ body {
 textarea {
   width: 100%;
   min-height: 200px;
+  max-height: 400px;
   padding: 15px;
   border: 2px solid #e9ecef;
   border-radius: 8px;
@@ -95,6 +96,7 @@ textarea {
   line-height: 1.5;
   resize: vertical;
   transition: border-color 0.3s ease;
+  overflow-y: auto;
 }
 
 textarea:focus {
@@ -125,6 +127,9 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+  padding-right: 5px;
 }
 
 .url-item {
@@ -148,6 +153,12 @@ textarea:focus {
   justify-content: center;
 }
 
+.url-buttons .btn.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 .url-input {
   flex: 1;
   padding: 12px 15px;
@@ -161,6 +172,16 @@ textarea:focus {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.url-add-section {
+  margin-top: 15px;
+  text-align: center;
+}
+
+.url-add-section .btn {
+  padding: 10px 20px;
+  font-size: 14px;
 }
 
 .setting-item {
@@ -260,6 +281,27 @@ textarea:focus {
   flex-wrap: wrap;
   max-width: 1200px;
   margin: 0 auto;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  color: #6c757d;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  padding: 8px;
+  border-radius: 6px;
+}
+
+.github-link:hover {
+  color: #333;
+  background-color: #e9ecef;
+  transform: scale(1.1);
+}
+
+.github-icon {
+  width: 24px;
+  height: 24px;
 }
 
 .btn {

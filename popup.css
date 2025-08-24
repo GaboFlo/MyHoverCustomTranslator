@@ -273,3 +273,30 @@ body {
   color: #6c757d;
   font-size: 0.8rem;
 }
+
+.footer-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.github-link {
+  display: flex;
+  align-items: center;
+  color: #6c757d;
+  text-decoration: none;
+  transition: all 0.3s ease;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.github-link:hover {
+  color: #333;
+  background-color: #e9ecef;
+  transform: scale(1.1);
+}
+
+.github-icon {
+  width: 20px;
+  height: 20px;
+}
