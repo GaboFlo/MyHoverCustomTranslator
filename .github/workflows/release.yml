@@ -97,6 +97,9 @@ jobs:
           sed -i "s/\"version\": \"[^\"]*\"/\"version\": \"$VERSION\"/" manifest.json
           echo "✅ Version mise à jour dans manifest.json: $VERSION"
 
+      - name: Build extension
+        run: npm run build
+
       - name: Build Firefox extension
         run: npm run build:firefox
 
