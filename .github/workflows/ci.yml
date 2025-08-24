@@ -29,6 +29,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Run ESLint web-ext
+        run: npm run lint:web-ext
+
       - name: Check for TypeScript errors
         run: npx tsc --noEmit
 
