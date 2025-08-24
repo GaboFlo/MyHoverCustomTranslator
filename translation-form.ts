@@ -260,7 +260,7 @@ class TranslationAutocomplete {
 
     // Fermer les suggestions en cliquant ailleurs
     document.addEventListener("click", (e) => {
-      if (!this.elements.container.contains(e.target as Node)) {
+      if (!this.elements.container.contains(e.target as HTMLElement)) {
         this.hideSuggestions();
       }
     });
