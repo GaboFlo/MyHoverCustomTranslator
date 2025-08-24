@@ -1,0 +1,11 @@
+# Ignorer les fichiers compilés
+dist/
+*.js.map
+*.ts.map
+
+# Ignorer les fichiers de build
+build.js
+build.js.map
+
+# Ignorer les fichiers de configuration
+.web-ext-config.js

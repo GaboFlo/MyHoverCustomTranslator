@@ -1,3 +1,5 @@
+import { escapeHtml } from "./utils";
+
 // Types pour le composant de traduction
 interface TranslationFormElements {
   keyInput: HTMLInputElement;
@@ -48,15 +50,23 @@ class TranslationForm {
       <div class="translation-add-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="translationKey_${containerId}">Clé :</label>
-            <input type="text" id="translationKey_${containerId}" placeholder="Texte à traduire" class="form-input">
+            <label for="translationKey_${escapeHtml(containerId)}">Clé :</label>
+            <input type="text" id="translationKey_${escapeHtml(
+              containerId
+            )}" placeholder="Texte à traduire" class="form-input">
           </div>
           <div class="form-group">
-            <label for="translationValue_${containerId}">Traduction :</label>
-            <input type="text" id="translationValue_${containerId}" placeholder="Traduction" class="form-input">
+            <label for="translationValue_${escapeHtml(
+              containerId
+            )}">Traduction :</label>
+            <input type="text" id="translationValue_${escapeHtml(
+              containerId
+            )}" placeholder="Traduction" class="form-input">
           </div>
           <div class="form-group">
-            <button id="translationAdd_${containerId}" class="btn btn-primary">➕ Ajouter</button>
+            <button id="translationAdd_${escapeHtml(
+              containerId
+            )}" class="btn btn-primary">➕ Ajouter</button>
           </div>
         </div>
       </div>
@@ -229,8 +239,12 @@ class TranslationAutocomplete {
     container.innerHTML = `
       <div class="translation-autocomplete">
         <div class="autocomplete-search">
-          <input type="text" id="autocompleteSearch_${containerId}" placeholder="Rechercher une traduction..." class="form-input">
-          <div id="autocompleteSuggestions_${containerId}" class="autocomplete-suggestions"></div>
+          <input type="text" id="autocompleteSearch_${escapeHtml(
+            containerId
+          )}" placeholder="Rechercher une traduction..." class="form-input">
+          <div id="autocompleteSuggestions_${escapeHtml(
+            containerId
+          )}" class="autocomplete-suggestions"></div>
         </div>
       </div>
     `;
@@ -328,7 +342,9 @@ class TranslationAutocomplete {
     this.elements.suggestionsList.innerHTML = this.filteredSuggestions
       .map(
         ({ key, value }) => `
-        <div class="suggestion-item" data-key="${key}" data-value="${value}">
+        <div class="suggestion-item" data-key="${escapeHtml(
+          key
+        )}" data-value="${escapeHtml(value)}">
           <div class="suggestion-content">
             <div class="suggestion-key">${this.highlightMatch(
               key,

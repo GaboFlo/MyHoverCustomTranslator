@@ -1,3 +1,5 @@
+import { escapeHtml } from "./utils";
+
 // Types utilisés
 interface OptionsTranslationData {
   [key: string]: string | OptionsTranslationData;
@@ -246,7 +248,7 @@ class OptionsManager {
   }
 
   private populateUrlList(urls: string[]): void {
-    this.elements.urlList.innerHTML = "";
+    this.elements.urlList.textContent = "";
 
     if (urls.length === 0) {
       this.addUrlField("", false);
@@ -322,7 +324,9 @@ class OptionsManager {
     // Le bouton "+" est désactivé si l'URL a une valeur
 
     urlItem.innerHTML = `
-      <input type="text" placeholder="exemple.com" class="url-input" value="${value}">
+      <input type="text" placeholder="exemple.com" class="url-input" value="${escapeHtml(
+        value
+      )}">
       <div class="url-buttons">
         <button class="btn btn-danger remove-url" title="Supprimer cette URL">🗑️</button>
       </div>
@@ -892,7 +896,7 @@ class OptionsManager {
 
     snackbar.innerHTML = `
        <span class="snackbar-icon">${icons[type]}</span>
-       <span class="snackbar-content">${message}</span>
+       <span class="snackbar-content">${escapeHtml(message)}</span>
        <button class="snackbar-close" aria-label="Fermer">×</button>
      `;
 
