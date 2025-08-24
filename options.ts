@@ -31,6 +31,7 @@ interface OptionsElements {
   exportOptionsSettings: HTMLButtonElement;
   importOptionsSettings: HTMLButtonElement;
   importFile: HTMLInputElement;
+  addNewUrl: HTMLButtonElement;
 }
 
 class OptionsManager {
@@ -84,6 +85,7 @@ class OptionsManager {
     const importFile = document.getElementById(
       "importFile"
     ) as HTMLInputElement;
+    const addNewUrl = document.getElementById("addNewUrl") as HTMLButtonElement;
 
     this.elements = {
       translationsJson,
@@ -96,6 +98,7 @@ class OptionsManager {
       exportOptionsSettings,
       importOptionsSettings,
       importFile,
+      addNewUrl,
     };
   }
 
@@ -159,6 +162,11 @@ class OptionsManager {
       // Écouter les changements dans les champs URL
       this.elements.urlList.addEventListener("input", () => {
         this.checkForChanges();
+      });
+
+      // Événement pour ajouter une nouvelle URL
+      this.elements.addNewUrl.addEventListener("click", () => {
+        this.addUrlField("", true);
       });
     } catch (error) {
       console.error("❌ Erreur lors de la liaison des événements:", error);
@@ -228,7 +236,9 @@ class OptionsManager {
         this.translationAutocomplete &&
         this.translationAutocomplete.updateFromJson
       ) {
-        this.translationAutocomplete.updateFromJson(this.elements.translationsJson.value);
+        this.translationAutocomplete.updateFromJson(
+          this.elements.translationsJson.value
+        );
       }
     } catch {
       this.showSnackbar("Erreur lors du chargement des paramètres", "error");
@@ -310,16 +320,10 @@ class OptionsManager {
     urlItem.className = "url-item";
 
     // Le bouton "+" est désactivé si l'URL a une valeur
-    const hasValue = value.trim().length > 0;
-    const addButtonDisabled = hasValue ? "disabled" : "";
-    const addButtonClass = hasValue
-      ? "btn btn-secondary add-url disabled"
-      : "btn btn-secondary add-url";
 
     urlItem.innerHTML = `
       <input type="text" placeholder="exemple.com" class="url-input" value="${value}">
       <div class="url-buttons">
-        <button class="${addButtonClass}" title="Ajouter une URL" ${addButtonDisabled}>➕</button>
         <button class="btn btn-danger remove-url" title="Supprimer cette URL">🗑️</button>
       </div>
     `;
@@ -789,7 +793,9 @@ class OptionsManager {
         this.translationAutocomplete &&
         this.translationAutocomplete.updateFromJson
       ) {
-        this.translationAutocomplete.updateFromJson(this.elements.translationsJson.value);
+        this.translationAutocomplete.updateFromJson(
+          this.elements.translationsJson.value
+        );
       }
     } catch (error) {
       console.error("Erreur lors de l'ajout de la traduction:", error);
@@ -850,7 +856,9 @@ class OptionsManager {
         this.translationAutocomplete &&
         this.translationAutocomplete.updateFromJson
       ) {
-        this.translationAutocomplete.updateFromJson(this.elements.translationsJson.value);
+        this.translationAutocomplete.updateFromJson(
+          this.elements.translationsJson.value
+        );
       }
     } catch (error) {
       console.error("Erreur lors de la suppression de la traduction:", error);

@@ -14,9 +14,6 @@ const build = () => {
     "popup.css",
     "translation-form.css",
     "example-config.json",
-    "README.md",
-    "LICENSE",
-    ".gitignore",
   ];
 
   const dirsToCopy = ["icons"];
