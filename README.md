@@ -66,11 +66,13 @@ npm run build
 
 ### Installation sur Firefox
 
-1. Ouvrir Firefox et aller dans `about:debugging`
-2. Cliquer sur l'onglet **"Ce Firefox"**
-3. Cliquer sur **"Charger un module complémentaire temporaire"**
-4. Sélectionner le fichier `manifest.json` dans le dossier `dist/`
-5. L'extension apparaît dans la barre d'outils
+Ressource : <https://extensionworkshop.com/documentation/develop/getting-started-with-web-ext/>
+
+```bash
+npm run dev:firefox
+```
+
+Permettra d'observer en direct l'extension, il suffira juste de lancer `npm run build` pour tester le nouveau code.
 
 **✅ Vérification de l'installation :**
 

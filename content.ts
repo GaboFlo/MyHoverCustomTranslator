@@ -18,13 +18,14 @@ interface ContentSiteSettings {
 }
 
 class HoverTranslator {
+  private isEnabled = true;
+
   private translations: ContentTranslationData = {};
   private targetUrls: string[] = [];
-  private isEnabled: boolean = true;
-  private tooltip: HTMLDivElement | null = null;
-  private currentTimeout: number | null = null;
+  private hoverTimeout: number | null = null;
   private currentHoveredElement: HTMLElement | null = null;
-  private searchOverlay: HTMLDivElement | null = null;
+  private tooltip: HTMLElement | null = null;
+  private searchOverlay: HTMLElement | null = null;
   private searchInput: HTMLInputElement | null = null;
   private searchResults: HTMLElement[] = [];
   private siteSettings: { [domain: string]: ContentSiteSettings } = {};
@@ -33,6 +34,20 @@ class HoverTranslator {
 
   constructor() {
     this.init();
+  }
+
+  private sanitizeHtml(text: string): string {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  private setElementContent(element: HTMLElement, content: string): void {
+    element.textContent = content;
+  }
+
+  private setElementHtml(element: HTMLElement, html: string): void {
+    element.innerHTML = html;
   }
 
   private async init(): Promise<void> {
@@ -341,11 +356,11 @@ class HoverTranslator {
   }
 
   private showTooltip(translation: string, event: MouseEvent): void {
-    if (this.currentTimeout) {
-      clearTimeout(this.currentTimeout);
+    if (this.hoverTimeout) {
+      clearTimeout(this.hoverTimeout);
     }
 
-    this.currentTimeout = window.setTimeout(() => {
+    this.hoverTimeout = window.setTimeout(() => {
       if (this.tooltip) {
         this.tooltip.textContent = translation;
         this.tooltip.style.opacity = "1";
@@ -355,9 +370,9 @@ class HoverTranslator {
   }
 
   private hideTooltip(): void {
-    if (this.currentTimeout) {
-      clearTimeout(this.currentTimeout);
-      this.currentTimeout = null;
+    if (this.hoverTimeout) {
+      clearTimeout(this.hoverTimeout);
+      this.hoverTimeout = null;
     }
 
     if (this.tooltip) {
@@ -434,20 +449,26 @@ class HoverTranslator {
         : translation.translation;
     }
 
-    // Grouper les traductions par type
-    const normalTranslations = allTranslations.filter((t) => !t.isReverse);
-    const reverseTranslations = allTranslations.filter((t) => t.isReverse);
+    // Grouper les traductions par type et dédupliquer
+    const normalTranslations = allTranslations
+      .filter((t) => !t.isReverse)
+      .map((t) => t.translation);
+    const reverseTranslations = allTranslations
+      .filter((t) => t.isReverse)
+      .map((t) => t.translation);
+
+    // Dédupliquer les traductions
+    const uniqueNormalTranslations = [...new Set(normalTranslations)];
+    const uniqueReverseTranslations = [...new Set(reverseTranslations)];
 
     const parts: string[] = [];
 
-    if (normalTranslations.length > 0) {
-      parts.push(normalTranslations.map((t) => t.translation).join(" | "));
+    if (uniqueNormalTranslations.length > 0) {
+      parts.push(uniqueNormalTranslations.join(" | "));
     }
 
-    if (reverseTranslations.length > 0) {
-      parts.push(
-        `⏪ ${reverseTranslations.map((t) => t.translation).join(" | ")}`
-      );
+    if (uniqueReverseTranslations.length > 0) {
+      parts.push(`⏪ ${uniqueReverseTranslations.join(" | ")}`);
     }
 
     return parts.join(" | ");
@@ -510,7 +531,7 @@ class HoverTranslator {
     });
 
     // Mettre à jour le contenu de l'élément
-    element.innerHTML = highlightedContent;
+    this.setElementHtml(element, highlightedContent);
 
     // Sauvegarder le contenu original pour pouvoir le restaurer
     element.setAttribute("data-original-content", originalContent);
@@ -586,7 +607,7 @@ class HoverTranslator {
 
     // Bouton fermer
     const closeButton = document.createElement("button");
-    closeButton.innerHTML = "❌";
+    this.setElementContent(closeButton, "❌");
     closeButton.style.cssText = `
       background: none;
       border: none;
@@ -764,7 +785,7 @@ class HoverTranslator {
         `<span class="hover-translator-search-result" data-search-index="${index}" style="background-color: ${highlightColor}; color: white; padding: 2px 4px; border-radius: 3px; font-weight: bold; border: 2px solid #333;" title="${highlightText}${match.translation}">$1</span>`
       );
 
-      element.innerHTML = newHTML;
+      this.setElementHtml(element, newHTML);
 
       // Ajouter l'élément à la liste des résultats
       this.searchResults.push(element);
@@ -788,8 +809,8 @@ class HoverTranslator {
       .querySelectorAll("[data-original-search-content]")
       .forEach((element) => {
         const original = element.getAttribute("data-original-search-content");
-        if (original) {
-          element.innerHTML = original;
+        if (original && element instanceof HTMLElement) {
+          this.setElementHtml(element, original);
           element.removeAttribute("data-original-search-content");
         }
       });
@@ -844,7 +865,9 @@ class HoverTranslator {
           "data-original-content"
         );
         if (originalContent) {
-          this.currentHoveredElement.innerHTML = originalContent;
+          if (this.currentHoveredElement) {
+            this.setElementHtml(this.currentHoveredElement, originalContent);
+          }
           this.currentHoveredElement.removeAttribute("data-original-content");
         }
       }
@@ -866,7 +889,9 @@ class HoverTranslator {
       // Restaurer le contenu original
       const originalContent = el.getAttribute("data-original-content");
       if (originalContent) {
-        el.innerHTML = originalContent;
+        if (el instanceof HTMLElement) {
+          this.setElementHtml(el, originalContent);
+        }
         el.removeAttribute("data-original-content");
       }
     });
@@ -1021,7 +1046,7 @@ class HoverTranslator {
     });
 
     // Mettre à jour le contenu de l'élément
-    element.innerHTML = highlightedContent;
+    this.setElementHtml(element, highlightedContent);
 
     // Ajouter l'élément à la liste des éléments surlignés
     this.highlightedElements.push(element);

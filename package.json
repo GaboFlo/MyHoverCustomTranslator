@@ -6,11 +6,14 @@
   "main": "dist/content.js",
   "scripts": {
     "build": "tsc && node build.js",
+    "build:firefox": "tsc && web-ext build --source-dir dist",
     "watch": "tsc --watch",
     "clean": "rimraf dist",
     "dev": "npm run clean && npm run build",
+    "dev:firefox": "npm run build && web-ext run --source-dir dist",
     "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --ext .ts --fix"
+    "lint:fix": "eslint . --ext .ts --fix",
+    "lint:web-ext": "web-ext lint --source-dir dist"
   },
   "keywords": [
     "extension",
@@ -30,7 +33,8 @@
     "@typescript-eslint/parser": "^8.40.0",
     "eslint": "^9.34.0",
     "rimraf": "^6.0.1",
-    "typescript": "^5.9.2"
+    "typescript": "^5.9.2",
+    "web-ext": "^8.9.0"
   },
   "engines": {
     "node": ">=18.0.0"

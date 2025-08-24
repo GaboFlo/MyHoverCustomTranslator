@@ -31,6 +31,21 @@ class TranslationForm {
   private elements!: TranslationFormElements;
   private callbacks: TranslationFormCallbacks;
 
+  private sanitizeHtml(text: string): string {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private setElementContent(element: HTMLElement, content: string): void {
+    element.textContent = content;
+  }
+
+  private setElementHtml(element: HTMLElement, html: string): void {
+    element.innerHTML = html;
+  }
+
   constructor(containerId: string, callbacks: TranslationFormCallbacks = {}) {
     this.callbacks = callbacks;
     this.createForm(containerId);
@@ -44,34 +59,47 @@ class TranslationForm {
     }
 
     // Créer la structure HTML
-    container.innerHTML = `
+    this.setElementHtml(
+      container,
+      `
       <div class="translation-add-form">
         <div class="form-row">
           <div class="form-group">
-            <label for="translationKey_${containerId}">Clé :</label>
-            <input type="text" id="translationKey_${containerId}" placeholder="Texte à traduire" class="form-input">
+            <label for="translationKey_${this.sanitizeHtml(
+              containerId
+            )}">Clé :</label>
+            <input type="text" id="translationKey_${this.sanitizeHtml(
+              containerId
+            )}" placeholder="Texte à traduire" class="form-input">
           </div>
           <div class="form-group">
-            <label for="translationValue_${containerId}">Traduction :</label>
-            <input type="text" id="translationValue_${containerId}" placeholder="Traduction" class="form-input">
+            <label for="translationValue_${this.sanitizeHtml(
+              containerId
+            )}">Traduction :</label>
+            <input type="text" id="translationValue_${this.sanitizeHtml(
+              containerId
+            )}" placeholder="Traduction" class="form-input">
           </div>
           <div class="form-group">
-            <button id="translationAdd_${containerId}" class="btn btn-primary">➕ Ajouter</button>
+            <button id="translationAdd_${this.sanitizeHtml(
+              containerId
+            )}" class="btn btn-primary">➕ Ajouter</button>
           </div>
         </div>
       </div>
-    `;
+    `
+    );
 
     // Cache les éléments
     this.elements = {
       keyInput: document.getElementById(
-        `translationKey_${containerId}`
+        `translationKey_${this.sanitizeHtml(containerId)}`
       ) as HTMLInputElement,
       valueInput: document.getElementById(
-        `translationValue_${containerId}`
+        `translationValue_${this.sanitizeHtml(containerId)}`
       ) as HTMLInputElement,
       addButton: document.getElementById(
-        `translationAdd_${containerId}`
+        `translationAdd_${this.sanitizeHtml(containerId)}`
       ) as HTMLButtonElement,
       container: container,
     };
@@ -212,6 +240,21 @@ class TranslationAutocomplete {
   private allTranslations: Record<string, string> = {};
   private filteredSuggestions: Array<{ key: string; value: string }> = [];
 
+  private sanitizeHtml(text: string): string {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  private setElementContent(element: HTMLElement, content: string): void {
+    element.textContent = content;
+  }
+
+  private setElementHtml(element: HTMLElement, html: string): void {
+    element.innerHTML = html;
+  }
+
   constructor(containerId: string, callbacks: AutocompleteCallbacks = {}) {
     this.callbacks = callbacks;
     this.createAutocomplete(containerId);
@@ -226,22 +269,29 @@ class TranslationAutocomplete {
     }
 
     // Créer la structure HTML
-    container.innerHTML = `
+    this.setElementHtml(
+      container,
+      `
       <div class="translation-autocomplete">
         <div class="autocomplete-search">
-          <input type="text" id="autocompleteSearch_${containerId}" placeholder="Rechercher une traduction..." class="form-input">
-          <div id="autocompleteSuggestions_${containerId}" class="autocomplete-suggestions"></div>
+          <input type="text" id="autocompleteSearch_${this.sanitizeHtml(
+            containerId
+          )}" placeholder="Rechercher une traduction..." class="form-input">
+          <div id="autocompleteSuggestions_${this.sanitizeHtml(
+            containerId
+          )}" class="autocomplete-suggestions"></div>
         </div>
       </div>
-    `;
+    `
+    );
 
     // Cache les éléments
     this.elements = {
       searchInput: document.getElementById(
-        `autocompleteSearch_${containerId}`
+        `autocompleteSearch_${this.sanitizeHtml(containerId)}`
       ) as HTMLInputElement,
       suggestionsList: document.getElementById(
-        `autocompleteSuggestions_${containerId}`
+        `autocompleteSuggestions_${this.sanitizeHtml(containerId)}`
       ) as HTMLDivElement,
       container: container,
     };
@@ -325,10 +375,14 @@ class TranslationAutocomplete {
       return;
     }
 
-    this.elements.suggestionsList.innerHTML = this.filteredSuggestions
-      .map(
-        ({ key, value }) => `
-        <div class="suggestion-item" data-key="${key}" data-value="${value}">
+    this.setElementHtml(
+      this.elements.suggestionsList,
+      this.filteredSuggestions
+        .map(
+          ({ key, value }) => `
+        <div class="suggestion-item" data-key="${this.sanitizeHtml(
+          key
+        )}" data-value="${this.sanitizeHtml(value)}">
           <div class="suggestion-content">
             <div class="suggestion-key">${this.highlightMatch(
               key,
@@ -345,8 +399,9 @@ class TranslationAutocomplete {
           </div>
         </div>
       `
-      )
-      .join("");
+        )
+        .join("")
+    );
 
     this.elements.suggestionsList.style.display = "block";
 

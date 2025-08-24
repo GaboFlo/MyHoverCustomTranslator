@@ -43,6 +43,20 @@ class OptionsManager {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private translationAutocomplete?: any;
 
+  private sanitizeHtml(text: string): string {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  private setElementContent(element: HTMLElement, content: string): void {
+    element.textContent = content;
+  }
+
+  private setElementHtml(element: HTMLElement, html: string): void {
+    element.innerHTML = html;
+  }
+
   public getTranslationForm(): unknown {
     return this.translationForm;
   }
@@ -246,7 +260,7 @@ class OptionsManager {
   }
 
   private populateUrlList(urls: string[]): void {
-    this.elements.urlList.innerHTML = "";
+    this.setElementContent(this.elements.urlList, "");
 
     if (urls.length === 0) {
       this.addUrlField("", false);
@@ -321,12 +335,17 @@ class OptionsManager {
 
     // Le bouton "+" est désactivé si l'URL a une valeur
 
-    urlItem.innerHTML = `
-      <input type="text" placeholder="exemple.com" class="url-input" value="${value}">
+    this.setElementHtml(
+      urlItem,
+      `
+      <input type="text" placeholder="exemple.com" class="url-input" value="${this.sanitizeHtml(
+        value
+      )}">
       <div class="url-buttons">
         <button class="btn btn-danger remove-url" title="Supprimer cette URL">🗑️</button>
       </div>
-    `;
+    `
+    );
     this.elements.urlList.appendChild(urlItem);
 
     // Ajouter l'événement de changement pour mettre à jour l'état des boutons
@@ -449,7 +468,7 @@ class OptionsManager {
 
       // Vérifier la taille du dictionnaire
       const translationsSize = new Blob([JSON.stringify(translations)]).size;
-      const maxSize = 7000; // Limite de sécurité (Chrome limite à 8192 octets)
+      const maxSize = 6000; // Limite plus stricte pour éviter les erreurs de quota
 
       let OptionsSettings: OptionsSettings;
 
@@ -518,24 +537,39 @@ class OptionsManager {
   ): OptionsTranslationData[] {
     const parts: OptionsTranslationData[] = [];
     let currentPart: OptionsTranslationData = {};
-    let currentSize = 2; // Pour les accolades {}
+    let currentSize = 0;
 
     for (const [key, value] of Object.entries(translations)) {
-      const itemSize = new Blob([JSON.stringify({ [key]: value })]).size;
+      // Calculer la taille exacte de l'élément avec sa clé
+      const itemJson = JSON.stringify({ [key]: value });
+      const itemSize = new Blob([itemJson]).size;
 
+      // Si l'élément seul dépasse la limite, on le met dans sa propre partie
+      if (itemSize > maxSize) {
+        if (Object.keys(currentPart).length > 0) {
+          parts.push(currentPart);
+          currentPart = {};
+          currentSize = 0;
+        }
+        parts.push({ [key]: value });
+        continue;
+      }
+
+      // Vérifier si on peut ajouter cet élément à la partie courante
       if (
         currentSize + itemSize > maxSize &&
         Object.keys(currentPart).length > 0
       ) {
         parts.push(currentPart);
         currentPart = {};
-        currentSize = 2;
+        currentSize = 0;
       }
 
       currentPart[key] = value;
       currentSize += itemSize;
     }
 
+    // Ajouter la dernière partie si elle n'est pas vide
     if (Object.keys(currentPart).length > 0) {
       parts.push(currentPart);
     }
@@ -544,8 +578,30 @@ class OptionsManager {
   }
 
   private async cleanupOldTranslationParts(): Promise<void> {
-    // Simplification : on ne nettoie pas automatiquement pour éviter les erreurs d'API
-    // Les nouvelles données écraseront les anciennes
+    try {
+      // Récupérer le nombre d'anciennes parties
+      const result = await chrome.storage.sync.get(["translationPartsCount"]);
+
+      if (
+        result["translationPartsCount"] &&
+        result["translationPartsCount"] > 0
+      ) {
+        // Créer la liste des clés à supprimer
+        const keysToRemove = Array.from(
+          { length: result["translationPartsCount"] },
+          (_, i) => `translationPart_${i}`
+        );
+
+        // Supprimer les anciennes parties ET la clé translationPartsCount
+        await chrome.storage.sync.remove([
+          ...keysToRemove,
+          "translationPartsCount",
+        ]);
+      }
+    } catch (error) {
+      console.warn("⚠️ Erreur lors du nettoyage des anciennes parties:", error);
+      // Ne pas faire échouer le processus si le nettoyage échoue
+    }
   }
 
   private async resetOptionsSettings(): Promise<void> {
@@ -635,7 +691,9 @@ class OptionsManager {
   private async handleFileImport(event: Event): Promise<void> {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
-    if (!file) return;
+    if (!file) {
+      return;
+    }
 
     try {
       const text = await this.readFileAsText(file);
@@ -662,11 +720,22 @@ class OptionsManager {
         this.elements.delayInput.value = importData.delay.toString();
       }
 
-      this.showSnackbar("Paramètres importés avec succès", "success");
-      target.value = "";
+      // Mettre à jour l'autocomplétion avec le nouveau JSON
+      if (
+        this.translationAutocomplete &&
+        this.translationAutocomplete.updateFromJson
+      ) {
+        this.translationAutocomplete.updateFromJson(
+          this.elements.translationsJson.value
+        );
+      }
 
       // Sauvegarder automatiquement les paramètres importés
+      // Utiliser la même logique que saveOptionsSettings pour gérer les gros dictionnaires
       await this.saveOptionsSettings();
+
+      this.showSnackbar("Paramètres importés avec succès", "success");
+      target.value = "";
 
       // Mettre à jour les paramètres originaux et l'état des boutons après la sauvegarde
       this.originalSettings = this.getCurrentSettings();
@@ -890,11 +959,14 @@ class OptionsManager {
       warning: "⚠️",
     };
 
-    snackbar.innerHTML = `
+    this.setElementHtml(
+      snackbar,
+      `
        <span class="snackbar-icon">${icons[type]}</span>
-       <span class="snackbar-content">${message}</span>
+       <span class="snackbar-content">${this.sanitizeHtml(message)}</span>
        <button class="snackbar-close" aria-label="Fermer">×</button>
-     `;
+     `
+    );
 
     document.body.appendChild(snackbar);
 

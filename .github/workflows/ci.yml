@@ -29,6 +29,9 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+      - name: Run ESLint web-ext
+        run: npm run lint:web-ext
+
       - name: Check for TypeScript errors
         run: npx tsc --noEmit
 
@@ -77,3 +80,52 @@ jobs:
           name: extension-build
           path: dist/**/*
           retention-days: 0
+
+  build-firefox:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build extension
+        run: npm run build
+
+      - name: Build Firefox extension
+        run: npm run build:firefox
+
+      - name: Verify Firefox build
+        run: |
+          if [ ! -d "web-ext-artifacts" ]; then
+            echo "❌ Firefox build directory 'web-ext-artifacts' not found"
+            exit 1
+          fi
+
+          # Vérifier qu'il y a au moins un fichier .zip dans web-ext-artifacts
+          if ! ls web-ext-artifacts/*.zip 1> /dev/null 2>&1; then
+            echo "❌ No .zip file found in web-ext-artifacts directory"
+            exit 1
+          fi
+
+          echo "✅ Firefox extension build successful"
+
+          # Lister les fichiers créés
+          echo "📦 Firefox extension files:"
+          ls -la web-ext-artifacts/
+
+      - name: Upload Firefox build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-extension
+          path: web-ext-artifacts/**/*
+          retention-days: 1
