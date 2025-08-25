@@ -32,6 +32,7 @@ Extension de navigateur pour la traduction au survol avec dictionnaire personnal
 ## ✨ Fonctionnalités détaillées
 
 - 🎯 **Traduction au survol** : Affichage élégant des traductions avec bordure bleue
+- 📋 **Copie de traduction** : Clic droit pour copier la traduction dans le presse-papiers
 - 📝 **Dictionnaire personnalisable** : Support JSON récursif avec formatage automatique
 - 🔍 **Recherche intelligente** : Correspondance exacte et partielle, insensible à la casse
 - 🔎 **Recherche globale** : `Ctrl+Maj+F` pour rechercher dans toute la page
@@ -88,6 +89,22 @@ Permettra d'observer en direct l'extension, il suffira juste de lancer `npm run 
 
 - **Chrome/Edge :** Télécharger la dernière release et l'installer via le Chrome Web Store
 - **Firefox :** Télécharger le fichier `.xpi` et l'installer via Firefox Add-ons
+
+### 📋 Copie de traduction
+
+La fonctionnalité de copie vous permet de copier rapidement les traductions dans votre presse-papiers :
+
+- **Clic droit sur sélection** : Sélectionnez un mot et faites un clic droit pour copier sa traduction
+- **Clic droit sur mots surlignés** : Clic droit directement sur les mots auto-surlignés
+- **Menu contextuel intelligent** : Le menu s'adapte selon la disponibilité de la traduction
+- **Notification de confirmation** : Affichage d'une notification lors de la copie
+
+**Comment ça marche :**
+
+1. Sélectionnez un mot traduit ou cliquez droit sur un mot surligné
+2. Choisissez "Copier la traduction" dans le menu contextuel
+3. La traduction est copiée dans votre presse-papiers
+4. Une notification verte confirme la copie
 
 ### 🔎 Recherche globale
 
