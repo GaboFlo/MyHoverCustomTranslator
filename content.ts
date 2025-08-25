@@ -129,10 +129,17 @@ class HoverTranslator {
   }
 
   private bindEvents(): void {
+    // Utiliser la délégation d'événements pour éviter les conflits
     document.addEventListener("mouseover", this.handleMouseOver.bind(this));
     document.addEventListener("mouseout", this.handleMouseOut.bind(this));
     document.addEventListener("mousemove", this.handleMouseMove.bind(this));
     document.addEventListener("keydown", this.handleKeyDown.bind(this));
+    document.addEventListener("click", this.handleClick.bind(this));
+
+    // Écouter les messages du background script
+    chrome.runtime.onMessage.addListener(
+      this.handleBackgroundMessage.bind(this)
+    );
   }
 
   private observePageChanges(): void {
@@ -159,13 +166,14 @@ class HoverTranslator {
 
     const target = event.target as Element;
 
-    // Ignorer complètement les événements sur les éléments surlignés
-    if (target.hasAttribute("data-hover-translator-highlight")) {
-      return;
-    }
-
-    // Ignorer les éléments auto-surlignés (ils ont leur propre gestion)
-    if (target.hasAttribute("data-auto-highlight")) {
+    // Ignorer complètement les éléments surlignés et leurs parents
+    if (
+      target.hasAttribute("data-hover-translator-highlight") ||
+      target.hasAttribute("data-auto-highlight") ||
+      target.closest("[data-hover-translator-highlight]") ||
+      target.closest("[data-auto-highlight]") ||
+      target.closest("[data-hover-translator-border]")
+    ) {
       return;
     }
 
@@ -191,13 +199,14 @@ class HoverTranslator {
   private handleMouseOut(event: MouseEvent): void {
     const target = event.target as Element;
 
-    // Si on quitte un élément surligné, ne rien faire (garder le tooltip)
-    if (target.hasAttribute("data-hover-translator-highlight")) {
-      return;
-    }
-
-    // Si on quitte un élément auto-surligné, ne rien faire (garder le tooltip)
-    if (target.hasAttribute("data-auto-highlight")) {
+    // Ignorer complètement les éléments surlignés et leurs parents
+    if (
+      target.hasAttribute("data-hover-translator-highlight") ||
+      target.hasAttribute("data-auto-highlight") ||
+      target.closest("[data-hover-translator-highlight]") ||
+      target.closest("[data-auto-highlight]") ||
+      target.closest("[data-hover-translator-border]")
+    ) {
       return;
     }
 
@@ -222,6 +231,140 @@ class HoverTranslator {
       event.stopPropagation();
       this.showSearchOverlay();
     }
+  }
+
+  private handleClick(event: MouseEvent): void {
+    const target = event.target as Element;
+
+    // Vérifier si on clique sur un mot surligné
+    if (
+      target.hasAttribute("data-auto-highlight") ||
+      target.hasAttribute("data-hover-translator-highlight")
+    ) {
+      event.preventDefault();
+      event.stopPropagation();
+
+      const textToTranslate = target.textContent?.trim() || "";
+      if (textToTranslate) {
+        this.copyTranslationOnClick(textToTranslate, target as HTMLElement);
+      }
+    }
+  }
+
+  private async copyTranslationOnClick(
+    textToTranslate: string,
+    element: HTMLElement
+  ): Promise<void> {
+    // Vérifier si le texte a une traduction
+    const allTranslations = this.findAllTranslations(textToTranslate);
+
+    if (allTranslations.length > 0) {
+      const translation = this.formatMultipleTranslations(allTranslations);
+
+      // Supprimer le symbole ⏪ pour la copie
+      const cleanTranslation = translation.replace(/⏪\s*/g, "");
+
+      try {
+        await navigator.clipboard.writeText(cleanTranslation);
+
+        // Afficher un feedback visuel sur l'élément cliqué
+        this.showClickFeedback(element);
+
+        // Afficher une notification temporaire
+        this.showCopyNotification(cleanTranslation);
+      } catch (error) {
+        console.error("❌ Erreur lors de la copie :", error);
+
+        // Fallback pour les navigateurs qui ne supportent pas clipboard API
+        this.fallbackCopyToClipboard(cleanTranslation);
+        this.showClickFeedback(element);
+      }
+    }
+  }
+
+  private showClickFeedback(element: HTMLElement): void {
+    // Sauvegarder les styles originaux
+    const originalBackground = element.style.backgroundColor;
+    const originalColor = element.style.color;
+    const originalTransform = element.style.transform;
+    const originalTransition = element.style.transition;
+
+    // Appliquer un effet de feedback
+    element.style.transition = "all 0.3s ease";
+    element.style.backgroundColor = "#4caf50";
+    element.style.color = "white";
+    element.style.transform = "scale(1.1)";
+
+    // Restaurer les styles et supprimer le tooltip après 1.5 secondes
+    setTimeout(() => {
+      element.style.backgroundColor = originalBackground;
+      element.style.color = originalColor;
+      element.style.transform = originalTransform;
+      element.style.transition = originalTransition;
+    }, 1500);
+  }
+
+  private handleBackgroundMessage(): void {
+    // Garder cette méthode pour la compatibilité future
+  }
+
+  private fallbackCopyToClipboard(text: string): void {
+    const textArea = document.createElement("textarea");
+    textArea.value = text;
+    textArea.style.position = "fixed";
+    textArea.style.left = "-999999px";
+    textArea.style.top = "-999999px";
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+
+    try {
+      document.execCommand("copy");
+      this.showCopyNotification(text);
+    } catch (error) {
+      console.error("❌ Erreur lors de la copie fallback :", error);
+    } finally {
+      document.body.removeChild(textArea);
+    }
+  }
+
+  private showCopyNotification(translation: string): void {
+    const notification = document.createElement("div");
+    notification.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: linear-gradient(135deg, #4caf50 0%, #45a049 100%);
+      color: white;
+      padding: 12px 16px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      box-shadow: 0 4px 20px rgba(76, 175, 80, 0.3);
+      z-index: 10002;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    `;
+    notification.textContent = `Traduction copiée : ${translation}`;
+
+    document.body.appendChild(notification);
+
+    // Animer l'apparition
+    setTimeout(() => {
+      notification.style.opacity = "1";
+    }, 10);
+
+    // Supprimer après 2 secondes
+    setTimeout(() => {
+      notification.style.opacity = "0";
+      setTimeout(() => {
+        if (document.body.contains(notification)) {
+          document.body.removeChild(notification);
+        }
+      }, 300);
+    }, 2000);
   }
 
   private getTextFromElement(element: Element): string | null {
@@ -505,6 +648,7 @@ class HoverTranslator {
         isReverse: translation.isReverse,
         color: color,
         position: translation.position,
+        translation: translation.translation,
       };
     });
 
@@ -512,20 +656,13 @@ class HoverTranslator {
     matchesToHighlight.sort((a, b) => a.position - b.position);
 
     // Appliquer les surlignages dans l'ordre d'apparition
-    matchesToHighlight.forEach((match, index) => {
+    matchesToHighlight.forEach((match) => {
       if (match.color) {
         const regex = new RegExp(`(${this.escapeRegExp(match.key)})`, "gi");
-        const reverseIndicator = match.isReverse ? "⏪ " : "";
 
         highlightedContent = highlightedContent.replace(
           regex,
-          `<span data-hover-translator-highlight="true" style="background-color: ${
-            match.color.bg
-          }; color: ${
-            match.color.text
-          }; padding: 1px 2px; border-radius: 2px; font-weight: bold; pointer-events: none;" title="${reverseIndicator}Match ${
-            index + 1
-          }">$1</span>`
+          `<span data-hover-translator-highlight="true" style="background-color: ${match.color.bg}; color: ${match.color.text}; padding: 1px 2px; border-radius: 2px; font-weight: bold; cursor: pointer;">$1</span>`
         );
       }
     });
@@ -1036,11 +1173,10 @@ class HoverTranslator {
     matchesToHighlight.forEach((match) => {
       if (match.color) {
         const regex = new RegExp(`(${this.escapeRegExp(match.key)})`, "gi");
-        const reverseIndicator = match.isReverse ? "⏪ " : "";
 
         highlightedContent = highlightedContent.replace(
           regex,
-          `<span data-auto-highlight="true" style="background-color: ${match.color.bg}; color: ${match.color.text}; padding: 1px 2px; border-radius: 2px; cursor: pointer;" title="${reverseIndicator}${match.translation}" data-translation="${match.translation}" data-is-reverse="${match.isReverse}">$1</span>`
+          `<span data-auto-highlight="true" style="background-color: ${match.color.bg}; color: ${match.color.text}; padding: 1px 2px; border-radius: 2px; cursor: pointer;" data-translation="${match.translation}" data-is-reverse="${match.isReverse}">$1</span>`
         );
       }
     });
@@ -1054,12 +1190,25 @@ class HoverTranslator {
     // Ajouter des événements pour les spans surlignés
     const highlightedSpans = element.querySelectorAll("[data-auto-highlight]");
     highlightedSpans.forEach((span) => {
-      span.addEventListener("mouseenter", (event) => {
-        this.showAutoHighlightTooltip(event as MouseEvent, span as HTMLElement);
-      });
-      span.addEventListener("mouseleave", () => {
-        this.hideTooltip();
-      });
+      span.addEventListener(
+        "mouseenter",
+        (event) => {
+          event.stopPropagation();
+          this.showAutoHighlightTooltip(
+            event as MouseEvent,
+            span as HTMLElement
+          );
+        },
+        true
+      );
+      span.addEventListener(
+        "mouseleave",
+        (event) => {
+          event.stopPropagation();
+          this.hideTooltip();
+        },
+        true
+      );
     });
   }
 

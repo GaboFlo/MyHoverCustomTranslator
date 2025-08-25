@@ -32,6 +32,7 @@ Extension de navigateur pour la traduction au survol avec dictionnaire personnal
 ## ✨ Fonctionnalités détaillées
 
 - 🎯 **Traduction au survol** : Affichage élégant des traductions avec bordure bleue
+- 📋 **Copie de traduction** : Clic droit pour copier la traduction dans le presse-papiers
 - 📝 **Dictionnaire personnalisable** : Support JSON récursif avec formatage automatique
 - 🔍 **Recherche intelligente** : Correspondance exacte et partielle, insensible à la casse
 - 🔎 **Recherche globale** : `Ctrl+Maj+F` pour rechercher dans toute la page

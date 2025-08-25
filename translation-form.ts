@@ -29,17 +29,12 @@ interface AutocompleteCallbacks {
 
 class TranslationForm {
   private elements!: TranslationFormElements;
-  private callbacks: TranslationFormCallbacks;
+  private readonly callbacks: TranslationFormCallbacks;
 
   private sanitizeHtml(text: string): string {
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private setElementContent(element: HTMLElement, content: string): void {
-    element.textContent = content;
   }
 
   private setElementHtml(element: HTMLElement, html: string): void {
@@ -236,19 +231,14 @@ class TranslationForm {
 // Classe d'autocomplétion pour les traductions
 class TranslationAutocomplete {
   private elements!: AutocompleteElements;
-  private callbacks: AutocompleteCallbacks;
+  private readonly callbacks: AutocompleteCallbacks;
   private allTranslations: Record<string, string> = {};
   private filteredSuggestions: Array<{ key: string; value: string }> = [];
 
-  private sanitizeHtml(text: string): string {
+  private sanitizeHtmlForAutocomplete(text: string): string {
     const div = document.createElement("div");
     div.textContent = text;
     return div.innerHTML;
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  private setElementContent(element: HTMLElement, content: string): void {
-    element.textContent = content;
   }
 
   private setElementHtml(element: HTMLElement, html: string): void {
@@ -274,10 +264,10 @@ class TranslationAutocomplete {
       `
       <div class="translation-autocomplete">
         <div class="autocomplete-search">
-          <input type="text" id="autocompleteSearch_${this.sanitizeHtml(
+          <input type="text" id="autocompleteSearch_${this.sanitizeHtmlForAutocomplete(
             containerId
           )}" placeholder="Rechercher une traduction..." class="form-input">
-          <div id="autocompleteSuggestions_${this.sanitizeHtml(
+          <div id="autocompleteSuggestions_${this.sanitizeHtmlForAutocomplete(
             containerId
           )}" class="autocomplete-suggestions"></div>
         </div>
@@ -288,10 +278,12 @@ class TranslationAutocomplete {
     // Cache les éléments
     this.elements = {
       searchInput: document.getElementById(
-        `autocompleteSearch_${this.sanitizeHtml(containerId)}`
+        `autocompleteSearch_${this.sanitizeHtmlForAutocomplete(containerId)}`
       ) as HTMLInputElement,
       suggestionsList: document.getElementById(
-        `autocompleteSuggestions_${this.sanitizeHtml(containerId)}`
+        `autocompleteSuggestions_${this.sanitizeHtmlForAutocomplete(
+          containerId
+        )}`
       ) as HTMLDivElement,
       container: container,
     };
@@ -380,9 +372,9 @@ class TranslationAutocomplete {
       this.filteredSuggestions
         .map(
           ({ key, value }) => `
-        <div class="suggestion-item" data-key="${this.sanitizeHtml(
+        <div class="suggestion-item" data-key="${this.sanitizeHtmlForAutocomplete(
           key
-        )}" data-value="${this.sanitizeHtml(value)}">
+        )}" data-value="${this.sanitizeHtmlForAutocomplete(value)}">
           <div class="suggestion-content">
             <div class="suggestion-key">${this.highlightMatch(
               key,
