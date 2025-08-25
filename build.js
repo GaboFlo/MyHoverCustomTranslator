@@ -7,13 +7,13 @@ import process from "process";
 const build = () => {
   const filesToCopy = [
     "manifest.json",
-    "styles.css",
-    "options.html",
-    "options.css",
-    "popup.html",
-    "popup.css",
-    "translation-form.css",
-    "example-config.json",
+    "src/styles.css",
+    "src/options.html",
+    "src/options.css",
+    "src/popup.html",
+    "src/popup.css",
+    "src/translation-form.css",
+    "src/example-config.json",
   ];
 
   const dirsToCopy = ["icons"];
@@ -27,8 +27,9 @@ const build = () => {
 
   filesToCopy.forEach((file) => {
     if (fs.existsSync(file)) {
-      fs.copyFileSync(file, path.join("dist", file));
-      console.log(`📄 ${file} copié`);
+      const destFile = file.startsWith("src/") ? file.substring(4) : file;
+      fs.copyFileSync(file, path.join("dist", destFile));
+      console.log(`📄 ${file} copié vers ${destFile}`);
     }
   });
 
