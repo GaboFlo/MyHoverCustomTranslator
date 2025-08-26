@@ -13,7 +13,10 @@
     "dev:firefox": "npm run build && web-ext run --source-dir dist",
     "lint": "eslint . --ext .ts",
     "lint:fix": "eslint . --ext .ts --fix",
-    "lint:web-ext": "web-ext lint --source-dir dist"
+    "lint:web-ext": "web-ext lint --source-dir dist",
+    "prune": "ts-prune",
+    "prune:check": "ts-prune --error",
+    "ci": "npm run lint && npm run prune:check && npm run build"
   },
   "keywords": [
     "extension",
@@ -33,6 +36,7 @@
     "@typescript-eslint/parser": "^8.40.0",
     "eslint": "^9.34.0",
     "rimraf": "^6.0.1",
+    "ts-prune": "^0.10.3",
     "typescript": "^5.9.2",
     "web-ext": "^8.9.0"
   },

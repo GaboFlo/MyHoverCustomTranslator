@@ -1,24 +1,8 @@
-// Types utilisés
-interface OptionsTranslationData {
-  [key: string]: string | OptionsTranslationData;
-}
-
-interface OptionsSettings {
-  translations?: OptionsTranslationData;
-  targetUrls?: string[];
-  isEnabled?: boolean;
-  delay?: number;
-  translationPartsCount?: number;
-}
-
-interface ExportData {
-  translations?: OptionsTranslationData;
-  targetUrls?: string[];
-  isEnabled?: boolean;
-  delay?: number;
-  version: string;
-  exportDate: string;
-}
+import { TranslationAutocomplete } from "./components/TranslationAutocomplete";
+import { TranslationForm } from "./components/TranslationForm";
+import type { ExportData, Settings, TranslationData } from "./types";
+import { DomUtils } from "./utils/dom";
+import { StorageManager } from "./utils/storage";
 
 interface OptionsElements {
   translationsJson: HTMLTextAreaElement;
@@ -36,30 +20,10 @@ interface OptionsElements {
 
 class OptionsManager {
   private elements: OptionsElements;
-  private originalSettings: OptionsSettings = {};
+  private originalSettings: Settings = {};
   private hasChanges = false;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private translationForm?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  private translationAutocomplete?: any;
-
-  private sanitizeHtml(text: string): string {
-    const div = document.createElement("div");
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  private setElementContent(element: HTMLElement, content: string): void {
-    element.textContent = content;
-  }
-
-  private setElementHtml(element: HTMLElement, html: string): void {
-    element.innerHTML = html;
-  }
-
-  public getTranslationForm(): unknown {
-    return this.translationForm;
-  }
+  private translationForm?: TranslationForm;
+  private translationAutocomplete?: TranslationAutocomplete;
 
   constructor() {
     this.elements = {} as OptionsElements;
@@ -73,46 +37,30 @@ class OptionsManager {
   }
 
   private cacheElements(): void {
-    const translationsJson = document.getElementById(
-      "translationsJson"
-    ) as HTMLTextAreaElement;
-    const urlList = document.getElementById("urlList") as HTMLDivElement;
-    const isEnabled = document.getElementById("isEnabled") as HTMLInputElement;
-    const delayInput = document.getElementById(
-      "delayInput"
-    ) as HTMLInputElement;
-    const formatAndValidateJson = document.getElementById(
-      "formatAndValidateJson"
-    ) as HTMLButtonElement;
-    const saveOptionsSettings = document.getElementById(
-      "saveOptionsSettings"
-    ) as HTMLButtonElement;
-    const resetOptionsSettings = document.getElementById(
-      "resetOptionsSettings"
-    ) as HTMLButtonElement;
-    const exportOptionsSettings = document.getElementById(
-      "exportOptionsSettings"
-    ) as HTMLButtonElement;
-    const importOptionsSettings = document.getElementById(
-      "importOptionsSettings"
-    ) as HTMLButtonElement;
-    const importFile = document.getElementById(
-      "importFile"
-    ) as HTMLInputElement;
-    const addNewUrl = document.getElementById("addNewUrl") as HTMLButtonElement;
-
     this.elements = {
-      translationsJson,
-      urlList,
-      isEnabled,
-      delayInput,
-      formatAndValidateJson,
-      saveOptionsSettings,
-      resetOptionsSettings,
-      exportOptionsSettings,
-      importOptionsSettings,
-      importFile,
-      addNewUrl,
+      translationsJson: document.getElementById(
+        "translationsJson"
+      ) as HTMLTextAreaElement,
+      urlList: document.getElementById("urlList") as HTMLDivElement,
+      isEnabled: document.getElementById("isEnabled") as HTMLInputElement,
+      delayInput: document.getElementById("delayInput") as HTMLInputElement,
+      formatAndValidateJson: document.getElementById(
+        "formatAndValidateJson"
+      ) as HTMLButtonElement,
+      saveOptionsSettings: document.getElementById(
+        "saveOptionsSettings"
+      ) as HTMLButtonElement,
+      resetOptionsSettings: document.getElementById(
+        "resetOptionsSettings"
+      ) as HTMLButtonElement,
+      exportOptionsSettings: document.getElementById(
+        "exportOptionsSettings"
+      ) as HTMLButtonElement,
+      importOptionsSettings: document.getElementById(
+        "importOptionsSettings"
+      ) as HTMLButtonElement,
+      importFile: document.getElementById("importFile") as HTMLInputElement,
+      addNewUrl: document.getElementById("addNewUrl") as HTMLButtonElement,
     };
   }
 
@@ -142,13 +90,9 @@ class OptionsManager {
         this.handleFileImport(e);
       });
 
-      // Initialiser le composant de traduction factorisé
       this.initTranslationForm();
-
-      // Initialiser le composant d'autocomplétion
       this.initTranslationAutocomplete();
 
-      // Événements de détection des changements
       this.elements.translationsJson.addEventListener("input", () => {
         this.checkForChanges();
       });
@@ -173,12 +117,10 @@ class OptionsManager {
         }
       });
 
-      // Écouter les changements dans les champs URL
       this.elements.urlList.addEventListener("input", () => {
         this.checkForChanges();
       });
 
-      // Événement pour ajouter une nouvelle URL
       this.elements.addNewUrl.addEventListener("click", () => {
         this.addUrlField("", true);
       });
@@ -189,67 +131,27 @@ class OptionsManager {
 
   private async loadOptionsSettings(): Promise<void> {
     try {
-      const result = (await chrome.storage.sync.get([
-        "translations",
-        "targetUrls",
-        "isEnabled",
-        "delay",
-        "translationPartsCount",
-      ])) as OptionsSettings;
+      const settings = await StorageManager.loadSettings();
 
-      let translations: OptionsTranslationData = {};
-
-      // Vérifier s'il y a des parties de traduction
-      if (result.translationPartsCount && result.translationPartsCount > 0) {
-        // Charger toutes les parties
-        const partKeys = Array.from(
-          { length: result.translationPartsCount },
-          (_, i) => `translationPart_${i}`
-        );
-
-        const parts = await chrome.storage.sync.get(partKeys);
-
-        // Fusionner toutes les parties
-        for (let i = 0; i < result.translationPartsCount; i++) {
-          const partKey = `translationPart_${i}`;
-          if (parts[partKey]) {
-            translations = { ...translations, ...parts[partKey] };
-          }
-        }
-      } else {
-        // Fallback : essayer de charger depuis l'ancienne clé 'translations'
-        translations = result.translations || {};
-      }
-
-      // Formater et afficher le JSON
       this.elements.translationsJson.value = JSON.stringify(
-        translations,
+        settings.translations || {},
         null,
         2
       );
+      this.populateUrlList(settings.targetUrls || []);
+      this.elements.isEnabled.checked = settings.isEnabled !== false;
+      this.elements.delayInput.value = (settings.delay || 300).toString();
 
-      const targetUrls = result.targetUrls || [];
-      this.populateUrlList(targetUrls);
-
-      this.elements.isEnabled.checked = result.isEnabled !== false;
-      this.elements.delayInput.value = (result.delay || 300).toString();
-
-      // Sauvegarder les paramètres originaux pour la comparaison
       this.originalSettings = {
-        translations,
-        targetUrls,
-        isEnabled: result.isEnabled !== false,
-        delay: result.delay || 300,
+        translations: settings.translations || {},
+        targetUrls: settings.targetUrls || [],
+        isEnabled: settings.isEnabled !== false,
+        delay: settings.delay || 300,
       };
 
-      // Vérifier les changements et mettre à jour l'état des boutons
       this.checkForChanges();
 
-      // Mettre à jour l'autocomplétion avec les données chargées
-      if (
-        this.translationAutocomplete &&
-        this.translationAutocomplete.updateFromJson
-      ) {
+      if (this.translationAutocomplete?.updateFromJson) {
         this.translationAutocomplete.updateFromJson(
           this.elements.translationsJson.value
         );
@@ -260,7 +162,7 @@ class OptionsManager {
   }
 
   private populateUrlList(urls: string[]): void {
-    this.setElementContent(this.elements.urlList, "");
+    DomUtils.setElementContent(this.elements.urlList, "");
 
     if (urls.length === 0) {
       this.addUrlField("", false);
@@ -277,13 +179,13 @@ class OptionsManager {
     this.updateButtonsState();
   }
 
-  private getCurrentSettings(): OptionsSettings {
+  private getCurrentSettings(): Settings {
     const urlInputs = this.elements.urlList.querySelectorAll(".url-input");
     const targetUrls = Array.from(urlInputs)
       .map((input) => (input as HTMLInputElement).value.trim())
       .filter((url) => url.length > 0);
 
-    let translations: OptionsTranslationData = {};
+    let translations: Record<string, unknown> = {};
     try {
       const translationsText = this.elements.translationsJson.value.trim();
       if (translationsText) {
@@ -301,8 +203,7 @@ class OptionsManager {
     };
   }
 
-  private hasSettingsChanged(currentSettings: OptionsSettings): boolean {
-    // Comparer les traductions
+  private hasSettingsChanged(currentSettings: Settings): boolean {
     const originalTranslations = JSON.stringify(
       this.originalSettings.translations || {}
     );
@@ -311,12 +212,10 @@ class OptionsManager {
     );
     if (originalTranslations !== currentTranslations) return true;
 
-    // Comparer les URLs
     const originalUrls = JSON.stringify(this.originalSettings.targetUrls || []);
     const currentUrls = JSON.stringify(currentSettings.targetUrls || []);
     if (originalUrls !== currentUrls) return true;
 
-    // Comparer les autres paramètres
     if (this.originalSettings.isEnabled !== currentSettings.isEnabled)
       return true;
     if (this.originalSettings.delay !== currentSettings.delay) return true;
@@ -333,12 +232,10 @@ class OptionsManager {
     const urlItem = document.createElement("div");
     urlItem.className = "url-item";
 
-    // Le bouton "+" est désactivé si l'URL a une valeur
-
-    this.setElementHtml(
+    DomUtils.setElementHtml(
       urlItem,
       `
-      <input type="text" placeholder="exemple.com" class="url-input" value="${this.sanitizeHtml(
+      <input type="text" placeholder="exemple.com" class="url-input" value="${DomUtils.sanitizeHtml(
         value
       )}">
       <div class="url-buttons">
@@ -348,7 +245,6 @@ class OptionsManager {
     );
     this.elements.urlList.appendChild(urlItem);
 
-    // Ajouter l'événement de changement pour mettre à jour l'état des boutons
     const urlInput = urlItem.querySelector(".url-input") as HTMLInputElement;
     const addButton = urlItem.querySelector(".add-url") as HTMLButtonElement;
 
@@ -368,11 +264,9 @@ class OptionsManager {
     const hasValue = urlInput.value.trim().length > 0;
 
     if (hasValue) {
-      // Si l'URL a une valeur, désactiver le bouton "+"
       addButton.disabled = true;
       addButton.classList.add("disabled");
     } else {
-      // Si l'URL est vide, activer le bouton "+" pour permettre l'ajout
       addButton.disabled = false;
       addButton.classList.remove("disabled");
     }
@@ -383,7 +277,6 @@ class OptionsManager {
     if (this.elements.urlList.children.length > 1) {
       urlItem.remove();
 
-      // Vérifier s'il reste au moins une URL vide pour permettre l'ajout
       const remainingUrls =
         this.elements.urlList.querySelectorAll(".url-input");
       const hasEmptyUrl = Array.from(remainingUrls).some(
@@ -398,13 +291,13 @@ class OptionsManager {
     }
   }
 
-  private countKeys(obj: OptionsTranslationData): number {
+  private countKeys(obj: Record<string, unknown>): number {
     let count = 0;
     for (const key in obj) {
       if (Object.prototype.hasOwnProperty.call(obj, key)) {
         count++;
         if (typeof obj[key] === "object" && obj[key] !== null) {
-          count += this.countKeys(obj[key] as OptionsTranslationData);
+          count += this.countKeys(obj[key] as Record<string, unknown>);
         }
       }
     }
@@ -416,13 +309,11 @@ class OptionsManager {
       const jsonText = this.elements.translationsJson.value.trim();
       if (!jsonText) return;
 
-      const parsed = JSON.parse(jsonText) as OptionsTranslationData;
+      const parsed = JSON.parse(jsonText) as Record<string, unknown>;
       const formatted = JSON.stringify(parsed, null, 2);
-
-      // Mettre à jour le textarea avec le JSON formaté
       this.elements.translationsJson.value = formatted;
     } catch {
-      // En cas d'erreur de parsing, on ne fait rien (le JSON n'est pas valide)
+      // En cas d'erreur de parsing, on ne fait rien
     }
   }
 
@@ -434,10 +325,8 @@ class OptionsManager {
         return;
       }
 
-      const parsed = JSON.parse(jsonText) as OptionsTranslationData;
+      const parsed = JSON.parse(jsonText) as Record<string, unknown>;
       const formatted = JSON.stringify(parsed, null, 2);
-
-      // Mettre à jour le textarea avec le JSON formaté
       this.elements.translationsJson.value = formatted;
 
       const keyCount = this.countKeys(parsed);
@@ -455,10 +344,10 @@ class OptionsManager {
   private async saveOptionsSettings(): Promise<void> {
     try {
       const translationsText = this.elements.translationsJson.value.trim();
-      let translations: OptionsTranslationData = {};
+      let translations: Record<string, unknown> = {};
 
       if (translationsText) {
-        translations = JSON.parse(translationsText) as OptionsTranslationData;
+        translations = JSON.parse(translationsText);
       }
 
       const urlInputs = this.elements.urlList.querySelectorAll(".url-input");
@@ -466,60 +355,19 @@ class OptionsManager {
         .map((input) => (input as HTMLInputElement).value.trim())
         .filter((url) => url.length > 0);
 
-      // Vérifier la taille du dictionnaire
-      const translationsSize = new Blob([JSON.stringify(translations)]).size;
-      const maxSize = 6000; // Limite plus stricte pour éviter les erreurs de quota
+      const settings: Settings = {
+        translations: translations as TranslationData,
+        targetUrls,
+        isEnabled: this.elements.isEnabled.checked,
+        delay: parseInt(this.elements.delayInput.value) || 300,
+      };
 
-      let OptionsSettings: OptionsSettings;
+      await StorageManager.saveSettings(settings);
+      this.showSnackbar("Paramètres sauvegardés avec succès !", "success");
 
-      // Toujours nettoyer les anciennes données avant de sauvegarder
-      await this.cleanupOldTranslationParts();
-
-      if (translationsSize > maxSize) {
-        // Diviser le dictionnaire en parties
-        const translationParts = this.splitTranslations(translations, maxSize);
-
-        // Sauvegarder les autres paramètres sans les traductions
-        OptionsSettings = {
-          targetUrls,
-          isEnabled: this.elements.isEnabled.checked,
-          delay: parseInt(this.elements.delayInput.value) || 300,
-          translationPartsCount: translationParts.length,
-        };
-
-        // Sauvegarder chaque partie séparément
-        const savePromises = translationParts.map((part, index) =>
-          chrome.storage.sync.set({ [`translationPart_${index}`]: part })
-        );
-
-        await Promise.all([
-          chrome.storage.sync.set(
-            OptionsSettings as { [key: string]: unknown }
-          ),
-          ...savePromises,
-        ]);
-
-        this.showSnackbar(`Sauvegardé avec succès`, "success");
-      } else {
-        OptionsSettings = {
-          translations,
-          targetUrls,
-          isEnabled: this.elements.isEnabled.checked,
-          delay: parseInt(this.elements.delayInput.value) || 300,
-        };
-
-        await chrome.storage.sync.set(
-          OptionsSettings as { [key: string]: unknown }
-        );
-        this.showSnackbar("Paramètres sauvegardés avec succès !", "success");
-      }
-
-      // Mettre à jour les paramètres originaux et l'état des boutons
       this.originalSettings = this.getCurrentSettings();
       this.hasChanges = false;
       this.updateButtonsState();
-
-      // Formater le JSON dans le textarea pour un affichage propre
       this.formatJsonInTextarea();
     } catch (error) {
       const errorMessage =
@@ -528,79 +376,6 @@ class OptionsManager {
         `Erreur lors de la sauvegarde: ${errorMessage}`,
         "error"
       );
-    }
-  }
-
-  private splitTranslations(
-    translations: OptionsTranslationData,
-    maxSize: number
-  ): OptionsTranslationData[] {
-    const parts: OptionsTranslationData[] = [];
-    let currentPart: OptionsTranslationData = {};
-    let currentSize = 0;
-
-    for (const [key, value] of Object.entries(translations)) {
-      // Calculer la taille exacte de l'élément avec sa clé
-      const itemJson = JSON.stringify({ [key]: value });
-      const itemSize = new Blob([itemJson]).size;
-
-      // Si l'élément seul dépasse la limite, on le met dans sa propre partie
-      if (itemSize > maxSize) {
-        if (Object.keys(currentPart).length > 0) {
-          parts.push(currentPart);
-          currentPart = {};
-          currentSize = 0;
-        }
-        parts.push({ [key]: value });
-        continue;
-      }
-
-      // Vérifier si on peut ajouter cet élément à la partie courante
-      if (
-        currentSize + itemSize > maxSize &&
-        Object.keys(currentPart).length > 0
-      ) {
-        parts.push(currentPart);
-        currentPart = {};
-        currentSize = 0;
-      }
-
-      currentPart[key] = value;
-      currentSize += itemSize;
-    }
-
-    // Ajouter la dernière partie si elle n'est pas vide
-    if (Object.keys(currentPart).length > 0) {
-      parts.push(currentPart);
-    }
-
-    return parts;
-  }
-
-  private async cleanupOldTranslationParts(): Promise<void> {
-    try {
-      // Récupérer le nombre d'anciennes parties
-      const result = await chrome.storage.sync.get(["translationPartsCount"]);
-
-      if (
-        result["translationPartsCount"] &&
-        result["translationPartsCount"] > 0
-      ) {
-        // Créer la liste des clés à supprimer
-        const keysToRemove = Array.from(
-          { length: result["translationPartsCount"] },
-          (_, i) => `translationPart_${i}`
-        );
-
-        // Supprimer les anciennes parties ET la clé translationPartsCount
-        await chrome.storage.sync.remove([
-          ...keysToRemove,
-          "translationPartsCount",
-        ]);
-      }
-    } catch (error) {
-      console.warn("⚠️ Erreur lors du nettoyage des anciennes parties:", error);
-      // Ne pas faire échouer le processus si le nettoyage échoue
     }
   }
 
@@ -622,45 +397,15 @@ class OptionsManager {
 
   private async exportOptionsSettings(): Promise<void> {
     try {
-      // Récupérer toutes les données de base
-      const result = (await chrome.storage.sync.get([
-        "translations",
-        "targetUrls",
-        "isEnabled",
-        "delay",
-        "translationPartsCount",
-      ])) as OptionsSettings;
-
-      let completeTranslations = result.translations || {};
-
-      // Si des parties de traduction existent, les fusionner
-      if (result.translationPartsCount && result.translationPartsCount > 0) {
-        const partKeys = Array.from(
-          { length: result.translationPartsCount },
-          (_, i) => `translationPart_${i}`
-        );
-
-        const parts = await chrome.storage.sync.get(partKeys);
-
-        // Fusionner toutes les parties
-        for (let i = 0; i < result.translationPartsCount; i++) {
-          const partKey = `translationPart_${i}`;
-          if (parts[partKey]) {
-            completeTranslations = {
-              ...completeTranslations,
-              ...parts[partKey],
-            };
-          }
-        }
-      }
+      const settings = await StorageManager.loadSettings();
 
       const exportData: ExportData = {
         version: chrome.runtime.getManifest().version,
         exportDate: new Date().toISOString(),
-        translations: completeTranslations,
-        targetUrls: result.targetUrls || [],
-        isEnabled: result.isEnabled !== false,
-        delay: result.delay || 300,
+        translations: settings.translations || ({} as TranslationData),
+        targetUrls: settings.targetUrls || [],
+        isEnabled: settings.isEnabled !== false,
+        delay: settings.delay || 300,
       };
 
       const blob = new Blob([JSON.stringify(exportData, null, 2)], {
@@ -691,16 +436,13 @@ class OptionsManager {
   private async handleFileImport(event: Event): Promise<void> {
     const target = event.target as HTMLInputElement;
     const file = target.files?.[0];
-    if (!file) {
-      return;
-    }
+    if (!file) return;
 
     try {
       const text = await this.readFileAsText(file);
       const importData = JSON.parse(text) as ExportData;
 
       if (importData.translations) {
-        // Formater et afficher le JSON importé
         this.elements.translationsJson.value = JSON.stringify(
           importData.translations,
           null,
@@ -720,24 +462,16 @@ class OptionsManager {
         this.elements.delayInput.value = importData.delay.toString();
       }
 
-      // Mettre à jour l'autocomplétion avec le nouveau JSON
-      if (
-        this.translationAutocomplete &&
-        this.translationAutocomplete.updateFromJson
-      ) {
+      if (this.translationAutocomplete?.updateFromJson) {
         this.translationAutocomplete.updateFromJson(
           this.elements.translationsJson.value
         );
       }
 
-      // Sauvegarder automatiquement les paramètres importés
-      // Utiliser la même logique que saveOptionsSettings pour gérer les gros dictionnaires
       await this.saveOptionsSettings();
-
       this.showSnackbar("Paramètres importés avec succès", "success");
       target.value = "";
 
-      // Mettre à jour les paramètres originaux et l'état des boutons après la sauvegarde
       this.originalSettings = this.getCurrentSettings();
       this.hasChanges = false;
       this.updateButtonsState();
@@ -759,29 +493,17 @@ class OptionsManager {
 
   private initTranslationForm(): void {
     try {
-      const TranslationFormClass = (
-        window as unknown as Record<string, unknown>
-      )["TranslationForm"];
-      if (typeof TranslationFormClass === "function") {
-        this.translationForm = new (TranslationFormClass as new (
-          containerId: string,
-          callbacks: {
-            onAdd?: (key: string, value: string) => void | Promise<void>;
-            onSuccess?: (message: string) => void;
-            onError?: (message: string) => void;
-          }
-        ) => unknown)("translationFormContainer", {
-          onAdd: async (key: string, value: string): Promise<void> => {
-            await this.handleTranslationAdd(key, value);
-          },
-          onSuccess: (message: string): void => {
-            this.showSnackbar(message, "success");
-          },
-          onError: (message: string): void => {
-            this.showSnackbar(message, "error");
-          },
-        });
-      }
+      this.translationForm = new TranslationForm("translationFormContainer", {
+        onAdd: async (key: string, value: string): Promise<void> => {
+          await this.handleTranslationAdd(key, value);
+        },
+        onSuccess: (message: string): void => {
+          this.showSnackbar(message, "success");
+        },
+        onError: (message: string): void => {
+          this.showSnackbar(message, "error");
+        },
+      });
     } catch (error) {
       console.error(
         "Erreur lors de l'initialisation du formulaire de traduction:",
@@ -792,34 +514,23 @@ class OptionsManager {
 
   private initTranslationAutocomplete(): void {
     try {
-      const TranslationAutocompleteClass = (
-        window as unknown as Record<string, unknown>
-      )["TranslationAutocomplete"];
-      if (typeof TranslationAutocompleteClass === "function") {
-        this.translationAutocomplete =
-          new (TranslationAutocompleteClass as new (
-            containerId: string,
-            callbacks: {
-              onEdit?: (key: string, value: string) => void;
-              onDelete?: (key: string) => void;
-              onSuccess?: (message: string) => void;
-              onError?: (message: string) => void;
-            }
-          ) => unknown)("translationAutocompleteContainer", {
-            onEdit: (key: string, value: string): void => {
-              this.handleTranslationEdit(key, value);
-            },
-            onDelete: async (key: string): Promise<void> => {
-              await this.handleTranslationDelete(key);
-            },
-            onSuccess: (message: string): void => {
-              this.showSnackbar(message, "success");
-            },
-            onError: (message: string): void => {
-              this.showSnackbar(message, "error");
-            },
-          });
-      }
+      this.translationAutocomplete = new TranslationAutocomplete(
+        "translationAutocompleteContainer",
+        {
+          onEdit: (key: string, value: string): void => {
+            this.handleTranslationEdit(key, value);
+          },
+          onDelete: async (key: string): Promise<void> => {
+            await this.handleTranslationDelete(key);
+          },
+          onSuccess: (message: string): void => {
+            this.showSnackbar(message, "success");
+          },
+          onError: (message: string): void => {
+            this.showSnackbar(message, "error");
+          },
+        }
+      );
     } catch (error) {
       console.error(
         "Erreur lors de l'initialisation de l'autocomplétion:",
@@ -833,35 +544,23 @@ class OptionsManager {
     value: string
   ): Promise<void> {
     try {
-      // Récupérer le JSON actuel
       const currentJson = this.elements.translationsJson.value.trim();
-      let translations: OptionsTranslationData = {};
+      let translations: Record<string, unknown> = {};
 
       if (currentJson) {
         translations = JSON.parse(currentJson);
       }
 
-      // Ajouter la nouvelle traduction
       translations[key] = value;
-
-      // Mettre à jour le textarea avec le nouveau JSON
       this.elements.translationsJson.value = JSON.stringify(
         translations,
         null,
         2
       );
-
-      // Vérifier les changements
       this.checkForChanges();
-
-      // IMPORTANT : Sauvegarder automatiquement (comme dans la popup)
       await this.saveOptionsSettings();
 
-      // Mettre à jour l'autocomplétion avec le nouveau JSON
-      if (
-        this.translationAutocomplete &&
-        this.translationAutocomplete.updateFromJson
-      ) {
+      if (this.translationAutocomplete?.updateFromJson) {
         this.translationAutocomplete.updateFromJson(
           this.elements.translationsJson.value
         );
@@ -874,7 +573,6 @@ class OptionsManager {
 
   private handleTranslationEdit(key: string, value: string): void {
     try {
-      // Pré-remplir le formulaire d'ajout avec les valeurs à modifier
       if (this.translationForm) {
         this.translationForm.setKey(key);
         this.translationForm.setValue(value);
@@ -896,35 +594,23 @@ class OptionsManager {
 
   private async handleTranslationDelete(key: string): Promise<void> {
     try {
-      // Récupérer le JSON actuel
       const currentJson = this.elements.translationsJson.value.trim();
-      let translations: OptionsTranslationData = {};
+      let translations: Record<string, unknown> = {};
 
       if (currentJson) {
         translations = JSON.parse(currentJson);
       }
 
-      // Supprimer la traduction
       delete translations[key];
-
-      // Mettre à jour le textarea avec le nouveau JSON
       this.elements.translationsJson.value = JSON.stringify(
         translations,
         null,
         2
       );
-
-      // Vérifier les changements
       this.checkForChanges();
-
-      // Sauvegarder automatiquement
       await this.saveOptionsSettings();
 
-      // Mettre à jour l'autocomplétion avec le nouveau JSON
-      if (
-        this.translationAutocomplete &&
-        this.translationAutocomplete.updateFromJson
-      ) {
+      if (this.translationAutocomplete?.updateFromJson) {
         this.translationAutocomplete.updateFromJson(
           this.elements.translationsJson.value
         );
@@ -943,15 +629,12 @@ class OptionsManager {
     type: "success" | "error" | "info" | "warning" = "info",
     duration: number = 4000
   ): void {
-    // Supprimer les snackbars existantes
     const existingSnackbars = document.querySelectorAll(".snackbar");
     existingSnackbars.forEach((snackbar) => snackbar.remove());
 
-    // Créer la nouvelle snackbar
     const snackbar = document.createElement("div");
     snackbar.className = `snackbar ${type}`;
 
-    // Icônes selon le type
     const icons = {
       success: "✅",
       error: "❌",
@@ -959,18 +642,17 @@ class OptionsManager {
       warning: "⚠️",
     };
 
-    this.setElementHtml(
+    DomUtils.setElementHtml(
       snackbar,
       `
        <span class="snackbar-icon">${icons[type]}</span>
-       <span class="snackbar-content">${this.sanitizeHtml(message)}</span>
+       <span class="snackbar-content">${DomUtils.sanitizeHtml(message)}</span>
        <button class="snackbar-close" aria-label="Fermer">×</button>
      `
     );
 
     document.body.appendChild(snackbar);
 
-    // Gérer la fermeture manuelle
     const closeBtn = snackbar.querySelector(
       ".snackbar-close"
     ) as HTMLButtonElement;
@@ -978,12 +660,10 @@ class OptionsManager {
       this.hideSnackbar(snackbar);
     });
 
-    // Afficher avec animation
     setTimeout(() => {
       snackbar.classList.add("show");
     }, 10);
 
-    // Masquer automatiquement
     setTimeout(() => {
       this.hideSnackbar(snackbar);
     }, duration);

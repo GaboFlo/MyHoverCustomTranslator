@@ -1,0 +1,7 @@
+{
+    "skip": [
+        "src/types/index.ts",
+        "src/utils/*.ts",
+        "src/components/*.ts"
+    ]
+}

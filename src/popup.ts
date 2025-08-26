@@ -1,20 +1,5 @@
-// Types globaux utilisés
-interface PopupTranslationData {
-  [key: string]: string | PopupTranslationData;
-}
-
-interface PopupSettings {
-  translations?: PopupTranslationData;
-  targetUrls?: string[];
-  isEnabled?: boolean;
-  delay?: number;
-  translationPartsCount?: number;
-  siteSettings?: { [domain: string]: SiteSettings };
-}
-
-interface SiteSettings {
-  highlightAllWords?: boolean;
-}
+import { DomUtils } from "./utils/dom";
+import { StorageManager } from "./utils/storage";
 
 interface PopupElements {
   siteStatusIndicator: HTMLSpanElement;
@@ -94,16 +79,10 @@ class PopupManager {
 
   private async loadStatus(): Promise<void> {
     try {
-      const result = (await chrome.storage.sync.get([
-        "translations",
-        "targetUrls",
-        "isEnabled",
-        "siteSettings",
-      ])) as PopupSettings;
-
-      const targetUrls = result.targetUrls || [];
-      const isEnabled = result.isEnabled !== false;
-      const siteSettings = result.siteSettings || {};
+      const settings = await StorageManager.loadSettings();
+      const targetUrls = settings.targetUrls || [];
+      const isEnabled = settings.isEnabled !== false;
+      const siteSettings = settings.siteSettings || {};
 
       await this.updateStatusDisplay(targetUrls, isEnabled, siteSettings);
     } catch (error) {
@@ -114,10 +93,9 @@ class PopupManager {
   private async updateStatusDisplay(
     targetUrls: string[],
     isEnabled: boolean,
-    siteSettings: { [domain: string]: SiteSettings }
+    siteSettings: Record<string, { highlightAllWords?: boolean }>
   ): Promise<void> {
     try {
-      // Récupérer l'URL de l'onglet actif
       const tabs = await chrome.tabs.query({
         active: true,
         currentWindow: true,
@@ -135,21 +113,17 @@ class PopupManager {
         isEnabled
       );
 
-      // Afficher le domaine qui sera ajouté
       this.elements.currentSiteUrl.value = currentDomain;
 
-      // Charger les paramètres du site actuel
       const currentSiteSettings = siteSettings[currentDomain] || {};
       this.elements.highlightAllWords.checked =
         currentSiteSettings.highlightAllWords || false;
 
-      // Afficher le statut spécifique au site actuel
       if (isActiveOnCurrentSite) {
         this.elements.siteStatusIndicator.textContent = "Actif";
         this.elements.siteStatusIndicator.className = "status-indicator";
         this.elements.addCurrentSite.classList.remove("visible");
         this.elements.removeCurrentSite.classList.add("visible");
-        // Afficher le message d'instruction et les options si le site est actif
         this.elements.infoSection.style.display = "block";
         this.elements.siteOptionsSection.style.display = "block";
       } else {
@@ -158,7 +132,6 @@ class PopupManager {
           "status-indicator inactive";
         this.elements.addCurrentSite.classList.add("visible");
         this.elements.removeCurrentSite.classList.remove("visible");
-        // Masquer le message d'instruction et les options si le site est inactif
         this.elements.infoSection.style.display = "none";
         this.elements.siteOptionsSection.style.display = "none";
       }
@@ -173,14 +146,13 @@ class PopupManager {
     isEnabled: boolean
   ): boolean {
     if (!isEnabled) return false;
-    if (targetUrls.length === 0) return false; // Inactif si aucune URL spécifiée
+    if (targetUrls.length === 0) return false;
 
     return targetUrls.some((url) => {
       if (url.startsWith("*://")) {
         const pattern = url.replace("*://", "");
         return currentDomain.includes(pattern);
       }
-      // Correspondance exacte ou correspondance de domaine
       return (
         currentDomain === url ||
         currentDomain.endsWith(`.${url}`) ||
@@ -191,22 +163,18 @@ class PopupManager {
 
   private openOptions(): void {
     try {
-      // Méthode 1 : API Chrome standard
       if (chrome?.runtime?.openOptionsPage) {
         chrome.runtime.openOptionsPage();
       } else {
-        // Méthode 2 : Fallback avec getURL
         const optionsUrl = chrome.runtime.getURL("options.html");
         window.open(optionsUrl, "_blank");
       }
     } catch (error) {
       console.error("Erreur lors de l'ouverture des options:", error);
-      // Méthode 3 : Fallback direct
       try {
         window.open("options.html", "_blank");
       } catch (fallbackError) {
         console.error("Erreur fallback:", fallbackError);
-        // Méthode 4 : Créer un nouvel onglet manuellement
         const newTab = window.open("", "_blank");
         if (newTab) {
           newTab.location.href = "options.html";
@@ -217,7 +185,6 @@ class PopupManager {
 
   private async addCurrentSite(): Promise<void> {
     try {
-      // Utiliser le domaine du champ de texte
       const domain = this.elements.currentSiteUrl.value.trim();
 
       if (!domain) {
@@ -225,13 +192,9 @@ class PopupManager {
         return;
       }
 
-      // Récupérer les URLs actuelles
-      const result = (await chrome.storage.sync.get(["targetUrls"])) as {
-        targetUrls?: string[];
-      };
-      const currentUrls = result.targetUrls || [];
+      const result = await chrome.storage.sync.get(["targetUrls"]);
+      const currentUrls = result["targetUrls"] || [];
 
-      // Ajouter le domaine actuel s'il n'est pas déjà présent
       if (!currentUrls.includes(domain)) {
         const newUrls = [...currentUrls, domain];
         await chrome.storage.sync.set({ targetUrls: newUrls });
@@ -240,9 +203,8 @@ class PopupManager {
           `Site ${domain} ajouté aux URLs ciblées`,
           "success"
         );
-        this.loadStatus(); // Recharger l'affichage
+        this.loadStatus();
 
-        // Recharger l'onglet actuel pour que l'extension prenne en compte le nouveau site
         const tabs = await chrome.tabs.query({
           active: true,
           currentWindow: true,
@@ -265,7 +227,6 @@ class PopupManager {
 
   private async removeCurrentSite(): Promise<void> {
     try {
-      // Utiliser le domaine du champ de texte
       const domain = this.elements.currentSiteUrl.value.trim();
 
       if (!domain) {
@@ -273,24 +234,19 @@ class PopupManager {
         return;
       }
 
-      // Récupérer les URLs actuelles
-      const result = (await chrome.storage.sync.get(["targetUrls"])) as {
-        targetUrls?: string[];
-      };
-      const currentUrls = result.targetUrls || [];
+      const result = await chrome.storage.sync.get(["targetUrls"]);
+      const currentUrls = result["targetUrls"] || [];
 
-      // Retirer le domaine actuel s'il est présent
       if (currentUrls.includes(domain)) {
-        const newUrls = currentUrls.filter((url) => url !== domain);
+        const newUrls = currentUrls.filter((url: string) => url !== domain);
         await chrome.storage.sync.set({ targetUrls: newUrls });
 
         this.showNotification(
           `Site ${domain} retiré des URLs ciblées`,
           "success"
         );
-        this.loadStatus(); // Recharger l'affichage
+        this.loadStatus();
 
-        // Recharger l'onglet actuel pour que l'extension prenne en compte le changement
         const tabs = await chrome.tabs.query({
           active: true,
           currentWindow: true,
@@ -315,40 +271,12 @@ class PopupManager {
     message: string,
     type: "success" | "error" = "success"
   ): void {
-    const notification = document.createElement("div");
-    notification.className = "notification";
-    notification.textContent = message;
-
-    const backgroundColor = type === "success" ? "#28a745" : "#fd7e14";
-
-    notification.style.cssText = `
-       position: fixed;
-       top: 10px;
-       right: 10px;
-       background: ${backgroundColor};
-       color: white;
-       padding: 8px 12px;
-       border-radius: 6px;
-       font-size: 12px;
-       z-index: 10000;
-       opacity: 0;
-       transition: opacity 0.3s ease;
-     `;
-
-    document.body.appendChild(notification);
-
-    setTimeout(() => {
-      notification.style.opacity = "1";
-    }, 100);
-
-    setTimeout(() => {
-      notification.style.opacity = "0";
-      setTimeout(() => {
-        if (document.body.contains(notification)) {
-          document.body.removeChild(notification);
-        }
-      }, 300);
-    }, 2000);
+    DomUtils.createNotification({
+      message,
+      type,
+      duration: 2000,
+      position: "top-right",
+    });
   }
 
   private async updateSiteSettings(): Promise<void> {
@@ -356,21 +284,15 @@ class PopupManager {
       const domain = this.elements.currentSiteUrl.value.trim();
       if (!domain) return;
 
-      // Récupérer les paramètres actuels
-      const result = (await chrome.storage.sync.get(["siteSettings"])) as {
-        siteSettings?: { [domain: string]: SiteSettings };
-      };
-      const siteSettings = result.siteSettings || {};
+      const result = await chrome.storage.sync.get(["siteSettings"]);
+      const siteSettings = result["siteSettings"] || {};
 
-      // Mettre à jour les paramètres pour ce site
       siteSettings[domain] ??= {};
       siteSettings[domain].highlightAllWords =
         this.elements.highlightAllWords.checked;
 
-      // Sauvegarder
       await chrome.storage.sync.set({ siteSettings });
 
-      // Recharger l'onglet actuel pour appliquer les changements
       const tabs = await chrome.tabs.query({
         active: true,
         currentWindow: true,
