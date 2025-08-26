@@ -5,7 +5,10 @@
 
 Extension de navigateur pour la traduction au survol avec dictionnaire personnalisable.
 
-> **📝 Note importante :** Cette extension utilise l'API WebExtensions standard et est compatible avec Chrome, Firefox, Edge et Safari. Les instructions d'installation varient selon le navigateur.
+## Productions
+- **Chrome Web Store** : https://chromewebstore.google.com/detail/traducteur-personnalis%C3%A9-a/nmknpgpdoclllikijfkhocimieblajmh
+- **Firefox** : Prochainement
+
 
 ## Exemples
 
@@ -21,28 +24,16 @@ Extension de navigateur pour la traduction au survol avec dictionnaire personnal
 
 ![Exemple de configuration dans la page dédiée de l'extension](assets/hover-config-example.gif)
 
-### 📋 Utilisation
+### En résumé 
 
-1. **Configuration** : Ouvrir les options de l'extension
-2. **Dictionnaire** : Ajouter vos traductions au format JSON, ou une par une via l'ajout manuel
-3. **URLs** : Spécifier les sites cibles (optionnel)
-4. **Activation** : L'extension se lance automatiquement sur les pages configurées
-5. **Surlignage** : Affichage au survol de vos traductions ou de la recherche inversée
+- 🔧 Configuration : Paramétrez l’extension via les options.
+- 📖 Dictionnaire : Ajoutez des traductions (JSON ou manuel).
+- 🌐 URLs ciblées : Activez l’extension sur des sites spécifiques.
+- 🎯 Survol & copie : Traduction au survol + copie en un clic.
+- 🔍 Recherche : Ctrl+Maj+F pour chercher dans la page.
 
-## ✨ Fonctionnalités détaillées
-
-- 🎯 **Traduction au survol** : Affichage élégant des traductions avec bordure bleue
-- 📋 **Copie de traduction** : Clic droit pour copier la traduction dans le presse-papiers
-- 📝 **Dictionnaire personnalisable** : Support JSON récursif avec formatage automatique
-- 🔍 **Recherche intelligente** : Correspondance exacte et partielle, insensible à la casse
-- 🔎 **Recherche globale** : `Ctrl+Maj+F` pour rechercher dans toute la page
-- 🌐 **URLs ciblées** : Configuration des sites où l'extension est active
-- 🚀 **Cross-browser** : Chrome, Firefox, Safari, Edge
-- ⚙️ **Configuration par site** : Options spécifiques par domaine
-
-## 🛠️ Installation
-
-### Développement
+---
+## 🛠️ Installation pour les développeuses et développeurs
 
 ```bash
 # Cloner le repository
@@ -52,7 +43,7 @@ cd MyHoverCustomTranslator
 # Installer les dépendances
 npm install
 
-# Compiler l'extension
+# Compiler l'extension dans dossier dist
 npm run build
 
 ```
@@ -73,7 +64,7 @@ Ressource : <https://extensionworkshop.com/documentation/develop/getting-started
 npm run dev:firefox
 ```
 
-Permettra d'observer en direct l'extension, il suffira juste de lancer `npm run build` pour tester le nouveau code.
+Permettra d'observer en direct l'extension, il suffira juste de lancer `npm run build` pour tester le nouveau code, puis `R` dans le shell pour refresh.
 
 **✅ Vérification de l'installation :**
 
@@ -83,41 +74,13 @@ Permettra d'observer en direct l'extension, il suffira juste de lancer `npm run 
 
 **⚠️ Note Firefox :** L'extension est temporaire et disparaîtra au redémarrage de Firefox. Pour une installation permanente, utilisez le fichier `.xpi` (voir section Production).
 
-**🔧 Important pour Firefox :** L'extension inclut un ID explicite (`myhover-translator@gaboflo.fr`) dans le manifest pour permettre le fonctionnement de l'API de stockage.
-
-### Production
-
-- **Chrome/Edge :** Télécharger la dernière release et l'installer via le Chrome Web Store
-- **Firefox :** Télécharger le fichier `.xpi` et l'installer via Firefox Add-ons
-
-### 🔎 Recherche globale
-
-Utilisez `Ctrl+Maj+F` sur n'importe quelle page pour ouvrir la barre de recherche. Cette fonctionnalité vous permet de :
-
-- **Rechercher dans toute la page** : Trouvez rapidement tous les mots traduits
-- **Navigation visuelle** : Les résultats sont surlignés avec des couleurs distinctes
-- **Interface intuitive** : Barre de recherche flottante avec compteur de résultats
-- **Fermeture facile** : Cliquez sur ❌ ou appuyez sur Échap pour fermer
-
-**Comment ça marche :**
-
-1. Appuyez sur `Ctrl+Maj+F` sur une page web
-2. Tapez votre recherche (minimum 2 caractères)
-3. Les résultats apparaissent automatiquement surlignés
-4. Le premier résultat est automatiquement mis en évidence
-5. Fermez la recherche en cliquant sur ❌
-
 ## 📄 Licence
 
 MIT License - voir le fichier [LICENSE](LICENSE) pour plus de détails.
 
 ## 🤝 Contribution
 
-1. Fork le projet
-2. Créer une branche feature (`git checkout -b feature/AmazingFeature`)
-3. Commit les changements (`git commit -m 'Add AmazingFeature'`)
-4. Push vers la branche (`git push origin feature/AmazingFeature`)
-5. Ouvrir une Pull Request
+Elles sont bienvenues ! Ouvrez une PR.
 
 ## 🔧 Dépannage
 
