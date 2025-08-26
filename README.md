@@ -6,7 +6,7 @@
 Extension de navigateur pour la traduction au survol avec dictionnaire personnalisable.
 
 ## Productions
-- **Chrome Web Store** : https://chromewebstore.google.com/detail/traducteur-personnalis%C3%A9-a/nmknpgpdoclllikijfkhocimieblajmh
+- [**Chrome Web Store**](https://chromewebstore.google.com/detail/nmknpgpdoclllikijfkhocimieblajmh)
 - **Firefox** : Prochainement
 
 
