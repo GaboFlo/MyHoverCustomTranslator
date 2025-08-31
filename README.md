@@ -7,7 +7,7 @@ Extension de navigateur pour la traduction au survol avec dictionnaire personnal
 
 ## Productions
 - [**Chrome Web Store**](https://chromewebstore.google.com/detail/nmknpgpdoclllikijfkhocimieblajmh)
-- **Firefox** : Prochainement
+- [**Firefox**](https://addons.mozilla.org/addon/traducteur-personnel-au-survol)
 
 
 ## Exemples
