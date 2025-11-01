@@ -15,6 +15,7 @@ interface ContentSettings {
 
 interface ContentSiteSettings {
   highlightAllWords?: boolean;
+  disableCopyOnHover?: boolean;
 }
 
 class HoverTranslator {
@@ -22,6 +23,7 @@ class HoverTranslator {
 
   private translations: ContentTranslationData = {};
   private targetUrls: string[] = [];
+  private delay: number = 300;
   private hoverTimeout: number | null = null;
   private currentHoveredElement: HTMLElement | null = null;
   private tooltip: HTMLElement | null = null;
@@ -95,6 +97,7 @@ class HoverTranslator {
       this.translations = translations;
       this.targetUrls = result.targetUrls || [];
       this.isEnabled = result.isEnabled !== false;
+      this.delay = result.delay ?? 300;
       this.siteSettings = result.siteSettings || {};
       this.currentDomain = window.location.hostname;
     } catch (error) {
@@ -186,13 +189,22 @@ class HoverTranslator {
     const allTranslations = this.findAllTranslations(text);
 
     if (allTranslations.length > 0) {
-      // Retirer l'ancienne bordure et ajouter la nouvelle
-      this.removeTranslationBorder();
-      this.addMultipleTranslationBorders(target, text, allTranslations);
+      // Annuler le timeout précédent s'il existe
+      if (this.hoverTimeout) {
+        clearTimeout(this.hoverTimeout);
+        this.hoverTimeout = null;
+      }
 
-      // Afficher le tooltip avec toutes les traductions
-      const tooltipText = this.formatMultipleTranslations(allTranslations);
-      this.showTooltip(tooltipText, event);
+      // Retirer l'ancienne bordure immédiatement
+      this.removeTranslationBorder();
+
+      // Utiliser un timeout pour afficher les bordures, surlignages et tooltip après le délai
+      this.hoverTimeout = window.setTimeout(() => {
+        this.addMultipleTranslationBorders(target, text, allTranslations);
+
+        const tooltipText = this.formatMultipleTranslations(allTranslations);
+        this.showTooltipImmediate(tooltipText, event);
+      }, this.delay);
     }
   }
 
@@ -241,6 +253,12 @@ class HoverTranslator {
       target.hasAttribute("data-auto-highlight") ||
       target.hasAttribute("data-hover-translator-highlight")
     ) {
+      // Vérifier si le copier-coller est désactivé pour ce site
+      const currentSiteSettings = this.siteSettings[this.currentDomain];
+      if (currentSiteSettings?.disableCopyOnHover) {
+        return;
+      }
+
       event.preventDefault();
       event.stopPropagation();
 
@@ -498,18 +516,12 @@ class HoverTranslator {
     });
   }
 
-  private showTooltip(translation: string, event: MouseEvent): void {
-    if (this.hoverTimeout) {
-      clearTimeout(this.hoverTimeout);
+  private showTooltipImmediate(translation: string, event: MouseEvent): void {
+    if (this.tooltip) {
+      this.tooltip.textContent = translation;
+      this.tooltip.style.opacity = "1";
+      this.positionTooltip(event);
     }
-
-    this.hoverTimeout = window.setTimeout(() => {
-      if (this.tooltip) {
-        this.tooltip.textContent = translation;
-        this.tooltip.style.opacity = "1";
-        this.positionTooltip(event);
-      }
-    }, 300);
   }
 
   private hideTooltip(): void {
