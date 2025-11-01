@@ -15,6 +15,7 @@ interface ContentSettings {
 
 interface ContentSiteSettings {
   highlightAllWords?: boolean;
+  disableCopyOnHover?: boolean;
 }
 
 class HoverTranslator {
@@ -241,6 +242,12 @@ class HoverTranslator {
       target.hasAttribute("data-auto-highlight") ||
       target.hasAttribute("data-hover-translator-highlight")
     ) {
+      // Vérifier si le copier-coller est désactivé pour ce site
+      const currentSiteSettings = this.siteSettings[this.currentDomain];
+      if (currentSiteSettings?.disableCopyOnHover) {
+        return;
+      }
+
       event.preventDefault();
       event.stopPropagation();
 
