@@ -14,6 +14,7 @@ interface PopupSettings {
 
 interface SiteSettings {
   highlightAllWords?: boolean;
+  disableCopyOnHover?: boolean;
 }
 
 interface PopupElements {
@@ -23,6 +24,7 @@ interface PopupElements {
   removeCurrentSite: HTMLButtonElement;
   currentSiteUrl: HTMLInputElement;
   highlightAllWords: HTMLInputElement;
+  disableCopyOnHover: HTMLInputElement;
   infoSection: HTMLDivElement;
   siteOptionsSection: HTMLDivElement;
 }
@@ -60,6 +62,9 @@ class PopupManager {
       highlightAllWords: document.getElementById(
         "highlightAllWords"
       ) as HTMLInputElement,
+      disableCopyOnHover: document.getElementById(
+        "disableCopyOnHover"
+      ) as HTMLInputElement,
       infoSection: document.getElementById("infoSection") as HTMLDivElement,
       siteOptionsSection: document.getElementById(
         "siteOptionsSection"
@@ -82,6 +87,10 @@ class PopupManager {
       });
 
       this.elements.highlightAllWords.addEventListener("change", () => {
+        this.updateSiteSettings();
+      });
+
+      this.elements.disableCopyOnHover.addEventListener("change", () => {
         this.updateSiteSettings();
       });
     } catch (error) {
@@ -142,6 +151,8 @@ class PopupManager {
       const currentSiteSettings = siteSettings[currentDomain] || {};
       this.elements.highlightAllWords.checked =
         currentSiteSettings.highlightAllWords || false;
+      this.elements.disableCopyOnHover.checked =
+        currentSiteSettings.disableCopyOnHover || false;
 
       // Afficher le statut spécifique au site actuel
       if (isActiveOnCurrentSite) {
@@ -366,6 +377,8 @@ class PopupManager {
       siteSettings[domain] ??= {};
       siteSettings[domain].highlightAllWords =
         this.elements.highlightAllWords.checked;
+      siteSettings[domain].disableCopyOnHover =
+        this.elements.disableCopyOnHover.checked;
 
       // Sauvegarder
       await chrome.storage.sync.set({ siteSettings });
@@ -380,11 +393,18 @@ class PopupManager {
         await chrome.tabs.reload(activeTab.id);
       }
 
-      this.showNotification(
-        this.elements.highlightAllWords.checked
-          ? "Surlignage automatique activé"
-          : "Surlignage automatique désactivé"
-      );
+      const messages: string[] = [];
+      if (this.elements.highlightAllWords.checked) {
+        messages.push("Surlignage automatique activé");
+      } else {
+        messages.push("Surlignage automatique désactivé");
+      }
+      if (this.elements.disableCopyOnHover.checked) {
+        messages.push("Copier-coller au hover désactivé");
+      } else {
+        messages.push("Copier-coller au hover activé");
+      }
+      this.showNotification(messages.join(" - "));
     } catch (error) {
       console.error("Erreur lors de la mise à jour des paramètres:", error);
       this.showNotification("Erreur lors de la mise à jour");
